@@ -38,12 +38,7 @@ Open http://localhost:3000. With no Supabase keys the app runs in **demo mode**:
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    ```
 4. Create users in **Authentication → Users → Add user** (tick *Auto confirm user*). Each new user gets a `staff` profile automatically.
-5. Promote the owner to admin once, in the SQL Editor:
-   ```sql
-   update public.profiles set role = 'admin'
-   where id = (select id from auth.users where email = 'owner@example.com');
-   ```
-   After that, roles can be changed from the **Equipo** screen.
+5. The **first** user you create becomes admin automatically; later users start as staff. Roles can then be changed from the **Equipo** screen.
 6. Restart `npm run dev`.
 
 ## Deploy
