@@ -20,6 +20,8 @@ export interface DataApi {
   // products
   listProducts(includeInactive?: boolean): Promise<Product[]>;
   saveProduct(p: Omit<Product, "id"> & { id?: string }): Promise<void>;
+  /** entries sold tonight per entry type (product id → qty), across all staff */
+  entryCounts(): Promise<Record<string, number>>;
 
   // sales & payments
   checkDuplicate(reference: string, hash: string): Promise<DuplicateMatch[]>;

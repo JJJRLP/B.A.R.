@@ -100,7 +100,15 @@ export default function ProductsPage() {
                       <Card className="divide-y divide-line">
                         {items.map((p) => (
                           <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
-                            <span className="flex-1 min-w-0 text-sm truncate">{p.name}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm truncate">{p.name}</p>
+                              {p.type === "entrada" && (p.free_until || p.max_per_night) && (
+                                <p className="mt-1 flex flex-wrap gap-1.5">
+                                  {p.free_until && p.price > 0 && <Tag>Libre hasta {p.free_until}</Tag>}
+                                  {p.max_per_night && <Tag>Cupo {p.max_per_night} por noche</Tag>}
+                                </p>
+                              )}
+                            </div>
                             <span className="text-sm tabular w-24 text-right">{p.price === 0 ? "Gratis" : bs(p.price)}</span>
                             <button
                               onClick={() => toggle(p)}
@@ -166,10 +174,14 @@ export default function ProductsPage() {
                 ))}
               </datalist>
             </label>
-            <label className="block">
-              <Label>Precio (Bs){draft.type === "entrada" && " · 0 = gratis"}</Label>
-              <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="tabular" />
-            </label>
+            {draft.type === "entrada" ? (
+              <EntrySetup draft={draft} setDraft={setDraft} />
+            ) : (
+              <label className="block">
+                <Label>Precio (Bs)</Label>
+                <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="tabular" />
+              </label>
+            )}
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="accent-[var(--color-accent)]" />
               Activo (visible al vender)
@@ -187,6 +199,89 @@ export default function ProductsPage() {
       </Modal>
 
       {toast && <Toast message={toast.msg} kind={toast.kind} onDone={() => setToast(null)} />}
+    </div>
+  );
+}
+
+function Tag({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex rounded-md bg-accent/10 text-accent px-1.5 py-0.5 text-[11px]">{children}</span>;
+}
+
+type FreeMode = "paid" | "until" | "free";
+
+/** Price, free-entry rule and per-night limit for one entry type. */
+function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) => void }) {
+  const mode: FreeMode = draft.price === 0 ? "free" : draft.free_until ? "until" : "paid";
+  const setMode = (m: FreeMode) => {
+    if (m === "free") setDraft({ ...draft, price: 0, free_until: null });
+    else if (m === "until") setDraft({ ...draft, price: draft.price || 30, free_until: draft.free_until || "23:00" });
+    else setDraft({ ...draft, price: draft.price || 30, free_until: null });
+  };
+  const options: { m: FreeMode; label: string; hint: string }[] = [
+    { m: "paid", label: "Se cobra siempre", hint: "Toda la noche al mismo precio" },
+    { m: "until", label: "Libre hasta una hora", hint: "Gratis al inicio, luego se cobra" },
+    { m: "free", label: "Siempre libre", hint: "Solo se cuenta la persona" },
+  ];
+
+  return (
+    <div className="space-y-4 rounded-lg border border-line bg-surface-2/40 p-3.5">
+      <div>
+        <Label>Entrada libre</Label>
+        <div className="grid gap-2">
+          {options.map((o) => (
+            <button
+              key={o.m}
+              type="button"
+              onClick={() => setMode(o.m)}
+              className={cx(
+                "text-left rounded-lg border px-3 py-2 transition-colors",
+                mode === o.m ? "border-accent bg-accent/10" : "border-line hover:border-muted",
+              )}
+            >
+              <span className="flex items-center gap-2 text-sm">
+                <span className={cx("h-3.5 w-3.5 rounded-full border-2 shrink-0", mode === o.m ? "border-accent bg-accent" : "border-muted")} />
+                {o.label}
+              </span>
+              <span className="block pl-5.5 text-xs text-muted">{o.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <label className={cx("block", mode === "free" && "opacity-40")}>
+          <Label>Precio (Bs)</Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            step="0.5"
+            min="0"
+            disabled={mode === "free"}
+            value={draft.price}
+            onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })}
+            className="tabular"
+          />
+        </label>
+        <label className={cx("block", mode !== "until" && "opacity-40")}>
+          <Label>Libre hasta</Label>
+          <Input type="time" disabled={mode !== "until"} value={draft.free_until ?? ""} onChange={(e) => setDraft({ ...draft, free_until: e.target.value || null })} />
+        </label>
+      </div>
+
+      <label className="block">
+        <Label>Cupo por noche</Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          min="1"
+          step="1"
+          placeholder="Sin límite"
+          value={draft.max_per_night ?? ""}
+          onChange={(e) => setDraft({ ...draft, max_per_night: e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null })}
+          className="tabular"
+        />
+        <span className="block text-xs text-muted mt-1">Al llegar al cupo, ya no se puede vender esta entrada esa noche.</span>
+      </label>
     </div>
   );
 }

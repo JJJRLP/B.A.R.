@@ -81,13 +81,23 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
     async listProducts(includeInactive = false) {
       let q = sb.from("products").select("*").order("type").order("category").order("name");
       if (!includeInactive) q = q.eq("active", true);
-      const rows = check(await q) as { price: unknown }[];
-      return rows.map((r) => ({ ...(r as object), price: num(r.price) })) as never;
+      const rows = check(await q) as { price: unknown; free_until?: string | null }[];
+      // Postgres returns time as "HH:MM:SS"; the app uses "HH:MM"
+      return rows.map((r) => ({ ...(r as object), price: num(r.price), free_until: r.free_until ? r.free_until.slice(0, 5) : null })) as never;
     },
     async saveProduct(p) {
       const { id, ...rest } = p;
-      if (id) check(await sb.from("products").update(rest).eq("id", id));
-      else check(await sb.from("products").insert(rest));
+      const row = {
+        ...rest,
+        max_per_night: rest.type === "entrada" && rest.max_per_night ? rest.max_per_night : null,
+        free_until: rest.type === "entrada" && rest.free_until ? rest.free_until : null,
+      };
+      if (id) check(await sb.from("products").update(row).eq("id", id));
+      else check(await sb.from("products").insert(row));
+    },
+    async entryCounts() {
+      const rows = (check(await sb.rpc("entry_counts", {})) ?? []) as { product_id: string; sold: number }[];
+      return Object.fromEntries(rows.map((r) => [r.product_id, Number(r.sold)]));
     },
 
     async checkDuplicate(reference, hash) {

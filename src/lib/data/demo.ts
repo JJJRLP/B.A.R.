@@ -1,7 +1,7 @@
 import type { DataApi } from "./api";
 import type { Payment, Product, Profile, Sale } from "../types";
 import { blobToDataUrl, compressImage } from "../image";
-import { businessDay } from "../format";
+import { businessDay, effectivePrice } from "../format";
 
 /**
  * Demo backend: keeps everything in this browser's localStorage so the app can be
@@ -104,6 +104,16 @@ const currentId = () => {
   }
 };
 
+/** Entries sold tonight per product id (non-void sales of the current business day). */
+function soldTonight(s: Store): Record<string, number> {
+  const today = businessDay();
+  const out: Record<string, number> = {};
+  for (const sale of s.sales)
+    if (sale.status !== "void" && sale.business_day === today)
+      for (const i of sale.items) if (i.product_type === "entrada") out[i.product_id] = (out[i.product_id] ?? 0) + i.qty;
+  return out;
+}
+
 export function resetDemo() {
   localStorage.removeItem(KEY);
 }
@@ -166,9 +176,17 @@ export function createDemoApi(): DataApi {
     async saveProduct(p) {
       requireAdmin();
       const s = load();
-      if (p.id) s.products = s.products.map((x) => (x.id === p.id ? { ...x, ...p, id: x.id } : x));
-      else s.products.push({ ...p, id: uuid() });
+      const clean = {
+        ...p,
+        max_per_night: p.type === "entrada" && p.max_per_night ? p.max_per_night : null,
+        free_until: p.type === "entrada" && p.free_until ? p.free_until : null,
+      };
+      if (p.id) s.products = s.products.map((x) => (x.id === p.id ? { ...x, ...clean, id: x.id } : x));
+      else s.products.push({ ...clean, id: uuid() });
       save(s);
+    },
+    async entryCounts() {
+      return soldTonight(load());
     },
 
     async checkDuplicate(reference, hash) {
@@ -188,10 +206,14 @@ export function createDemoApi(): DataApi {
       if (!input.items.length) throw new Error("La venta no tiene productos");
       const now = new Date().toISOString();
       const saleId = uuid();
+      const sold = soldTonight(s);
       const items = input.items.map((i) => {
         const prod = s.products.find((p) => p.id === i.product_id && p.active);
         if (!prod) throw new Error("Producto no encontrado");
-        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, qty: i.qty, unit_price: prod.price, subtotal: prod.price * i.qty };
+        if (prod.type === "entrada" && prod.max_per_night && (sold[prod.id] ?? 0) + i.qty > prod.max_per_night)
+          throw new Error(`Cupo agotado para ${prod.name}: quedan ${Math.max(prod.max_per_night - (sold[prod.id] ?? 0), 0)}`);
+        const price = effectivePrice(prod);
+        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, qty: i.qty, unit_price: price, subtotal: price * i.qty };
       });
       let proof_path: string | null = null;
       if (input.payment.proof) {

@@ -6,6 +6,7 @@ Built from the MVP PRD: Next.js + Tailwind on the front, Supabase (Postgres, Aut
 ## Features (MVP)
 
 - **Puerta / Barra**: the sale screen switches between entrance fees (General, VIP… with +/− counters) and bar products. One sale can include both; each device remembers its last mode.
+- **Entry setup** (admin, in Productos): for each entry tier set the price, whether it is always paid, free until a set hour (e.g. free until 23:00, then Bs 30) or always free, and an optional limit per night. The door shows remaining spots and blocks sales once a tier is full. Prices and limits are enforced again in the database.
 - **Nueva venta**: tap products, adjust quantities, choose the payment method (QR/transfer, cash, card). For QR, upload or paste (Ctrl+V) the WhatsApp screenshot and type the reference number.
 - **Automatic warnings**: amount ≠ total, and possible duplicate proof (same reference or same image).
 - **Pendientes** (admin): QR payments wait here until someone checks the bank app and marks them *Verificado* or *Rechazado* (with a reason).
@@ -28,7 +29,7 @@ Open http://localhost:3000. With no Supabase keys the app runs in **demo mode**:
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql` before entrance fees existed, run `supabase/migrations/002_entry_fees.sql`.
+2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql`, run the files in `supabase/migrations/` that came after it, in order (`002_entry_fees.sql`, then `003_entry_setup.sql`).
 3. Copy `.env.example` to `.env.local` and fill in **Project Settings → API**:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co

@@ -26,6 +26,10 @@ export interface Product {
   category: string;
   price: number;
   active: boolean;
+  /** entries only: max sold per night (null = no limit) */
+  max_per_night?: number | null;
+  /** entries only: free before this La Paz time "HH:MM" (null = never free) */
+  free_until?: string | null;
 }
 
 export interface SaleItem {

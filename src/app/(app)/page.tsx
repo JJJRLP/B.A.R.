@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Banknote, CreditCard, GlassWater, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, X } from "lucide-react";
 import { getApi } from "@/lib/data";
-import { bs, dateTime } from "@/lib/format";
+import { bs, dateTime, effectivePrice, isFreeNow } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
 import { Button, Empty, Input, Label, Modal, Spinner, Toast, cx } from "@/components/ui";
@@ -30,6 +30,26 @@ export default function NewSalePage() {
       .then(setProducts)
       .catch((e) => setToast({ msg: e.message, kind: "bad" }));
   }, []);
+
+  // Entries sold tonight (all devices) for the per-night limits, refreshed every 30 s.
+  // The tick also re-renders so a "free until 23:00" price switches on time.
+  const [sold, setSold] = useState<Record<string, number>>({});
+  const [, setTick] = useState(0);
+  const refreshSold = useCallback(() => {
+    getApi()
+      .entryCounts()
+      .then(setSold)
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    refreshSold();
+    const t = setInterval(() => {
+      refreshSold();
+      setTick((n) => n + 1);
+    }, 30_000);
+    return () => clearInterval(t);
+  }, [refreshSold]);
+  const remaining = (p: Product) => (p.type === "entrada" && p.max_per_night ? p.max_per_night - (sold[p.id] ?? 0) - (cart[p.id] ?? 0) : Infinity);
 
   // Door staff sell entries, bartenders sell drinks: remember each device's last mode.
   const [mode, setModeState] = useState<ProductType>("consumo");
@@ -63,25 +83,32 @@ export default function NewSalePage() {
         .filter((l): l is { product: Product; qty: number } => !!l.product && l.qty > 0),
     [cart, products],
   );
-  const total = lines.reduce((a, l) => a + l.product.price * l.qty, 0);
+  const total = lines.reduce((a, l) => a + effectivePrice(l.product) * l.qty, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
-  const add = (id: string, d = 1) =>
+  const add = (id: string, d = 1) => {
+    const p = products?.find((x) => x.id === id);
+    if (d > 0 && p && remaining(p) < d) {
+      setToast({ msg: `Cupo agotado para ${p.name}`, kind: "bad" });
+      return;
+    }
     setCart((c) => {
       const qty = Math.max(0, (c[id] ?? 0) + d);
       const next = { ...c, [id]: qty };
       if (!qty) delete next[id];
       return next;
     });
+  };
 
   const onSaved = useCallback((amount: number, method: PaymentMethod) => {
     setCart({});
     setSheetOpen(false);
+    refreshSold();
     setToast({
       msg: method === "qr" ? `Venta de ${bs(amount)} guardada · pago pendiente de verificación` : `Venta de ${bs(amount)} guardada y cobrada`,
       kind: "ok",
     });
-  }, []);
+  }, [refreshSold]);
 
   const checkout = (
     <Checkout
@@ -172,17 +199,33 @@ export default function NewSalePage() {
           <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3 max-w-2xl 2xl:max-w-none">
             {shown.map((p) => {
               const qty = cart[p.id] ?? 0;
+              const price = effectivePrice(p);
+              const freeNow = p.price > 0 && isFreeNow(p.free_until);
+              const left = remaining(p);
+              const soldOut = left <= 0 && qty === 0;
               return (
                 <div
                   key={p.id}
-                  className={cx("rounded-xl border p-4 flex items-center gap-4 transition-colors", qty ? "border-accent/60 bg-accent/[0.06]" : "border-line bg-surface")}
+                  className={cx(
+                    "rounded-xl border p-4 flex items-center gap-4 transition-colors",
+                    qty ? "border-accent/60 bg-accent/[0.06]" : "border-line bg-surface",
+                    soldOut && "opacity-50",
+                  )}
                 >
                   <span className="h-11 w-11 rounded-lg bg-accent/12 text-accent grid place-items-center shrink-0">
                     <Ticket size={20} />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{p.name}</p>
-                    <p className="text-sm text-ink-2 tabular">{p.price === 0 ? "Gratis" : bs(p.price)}</p>
+                    <p className="text-sm tabular flex flex-wrap items-center gap-x-2">
+                      {price === 0 ? <span className="text-ok font-medium">Gratis</span> : <span className="text-ink-2">{bs(price)}</span>}
+                      {freeNow && <span className="text-xs text-muted">hasta las {p.free_until}, luego {bs(p.price)}</span>}
+                    </p>
+                    {p.max_per_night && (
+                      <p className={cx("text-xs tabular mt-0.5", left <= 0 ? "text-bad" : left <= 10 ? "text-warn" : "text-muted")}>
+                        {left <= 0 ? "Cupo agotado" : `Quedan ${left} de ${p.max_per_night}`}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
@@ -196,7 +239,8 @@ export default function NewSalePage() {
                     <span className="w-8 text-center text-lg font-semibold tabular">{qty}</span>
                     <button
                       onClick={() => add(p.id, 1)}
-                      className="h-10 w-10 rounded-lg bg-accent text-accent-ink grid place-items-center hover:brightness-110"
+                      disabled={left <= 0}
+                      className="h-10 w-10 rounded-lg bg-accent text-accent-ink grid place-items-center hover:brightness-110 disabled:opacity-30"
                       aria-label={`Agregar una ${p.name}`}
                     >
                       <Plus size={16} />
@@ -381,7 +425,7 @@ function Checkout({
                 {product.type === "entrada" && <Ticket size={13} className="text-accent shrink-0" />}
                 {product.name}
               </p>
-              <p className="text-xs text-muted tabular">{bs(product.price)}</p>
+              <p className="text-xs text-muted tabular">{effectivePrice(product) === 0 ? "Gratis" : bs(effectivePrice(product))}</p>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => onAdd(product.id, -1)} className="h-7 w-7 rounded-md border border-line grid place-items-center text-ink-2 hover:text-ink" aria-label="Quitar uno">
@@ -392,7 +436,7 @@ function Checkout({
                 <Plus size={14} />
               </button>
             </div>
-            <span className="w-20 text-right text-sm tabular">{bs(product.price * qty)}</span>
+            <span className="w-20 text-right text-sm tabular">{bs(effectivePrice(product) * qty)}</span>
           </li>
         ))}
       </ul>

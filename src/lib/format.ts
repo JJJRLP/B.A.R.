@@ -29,3 +29,23 @@ export function addDays(day: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
+
+/** Seconds since the 06:00 rollover, wrapped to 0..86399 (so 01:00 is late night). */
+function secondsIntoNight(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (((h * 3600 + (m || 0) * 60 - ROLLOVER_HOURS * 3600) % 86400) + 86400) % 86400;
+}
+
+function laPazHHMM(d: Date): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(d);
+}
+
+/** Same rule as the database's effective_price(): entries are free before free_until. */
+export function isFreeNow(freeUntil: string | null | undefined, now = new Date()): boolean {
+  if (!freeUntil) return false;
+  return secondsIntoNight(laPazHHMM(now)) < secondsIntoNight(freeUntil.slice(0, 5));
+}
+
+export function effectivePrice(p: { type: string; price: number; free_until?: string | null }, now = new Date()): number {
+  return p.type === "entrada" && isFreeNow(p.free_until, now) ? 0 : p.price;
+}
