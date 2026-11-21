@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Banknote, CalendarDays, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
+import { AlertTriangle, Banknote, CalendarDays, ChevronDown, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
 import { getApi } from "@/lib/data";
-import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay, time } from "@/lib/format";
+import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
 import { Button, Empty, Input, Label, Modal, Spinner, cx } from "@/components/primitives";
@@ -23,6 +23,8 @@ const METHODS: { id: PaymentMethod; label: string; icon: typeof QrCode }[] = [
 const INK_BG: Record<Ink, string> = { pink: "bg-ink-pink", cyan: "bg-ink-cyan", violet: "bg-ink-violet" };
 const INK_BORDER: Record<Ink, string> = { pink: "border-ink-pink", cyan: "border-ink-cyan", violet: "border-ink-violet" };
 const INK_TEXT: Record<Ink, string> = { pink: "text-ink-pink", cyan: "text-ink-cyan", violet: "text-ink-violet" };
+// 24 h La Paz clock for the status line (short and unambiguous at night)
+const clock = (iso: string) => new Intl.DateTimeFormat("es-BO", { timeZone: "America/La_Paz", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 const inkOf = (p: Product, presale: boolean): Ink => (presale ? "violet" : (p.people_per_unit ?? 1) > 1 ? "cyan" : "pink");
 
 export default function NewSalePage() {
@@ -173,7 +175,7 @@ export default function NewSalePage() {
                 onClick={() => setMode(m)}
                 aria-pressed={on}
                 className={cx(
-                  "h-14 rounded-2xl px-4 flex items-center gap-3 transition-colors duration-100",
+                  "h-14 rounded-2xl px-4 flex items-center gap-3 transition-[background-color,color,transform] duration-100 ease-out active:scale-[0.98]",
                   on ? "bg-foreground text-background" : "bg-card text-ink-2 hover:text-ink",
                 )}
               >
@@ -197,13 +199,16 @@ export default function NewSalePage() {
           <p className="font-mono text-xs tracking-[0.1em] uppercase text-muted-foreground">
             {mode === "entrada" ? (
               <>
-                {presaleDay ? "Preventa" : "En puerta"} · <span className="text-ink">{nightPeople}</span> {nightPeople === 1 ? "persona" : "personas"} {presaleDay ? "para esa noche" : "esta noche"}
+                {presaleDay ? "Preventa" : "Puerta"} · <span className="text-ink">{nightPeople}</span> {presaleDay ? "para esa noche" : "dentro"}
               </>
             ) : (
               <>Barra · {ofMode.length} productos</>
             )}
-            <span className="mx-2 text-line">|</span>
-            {time(now)}
+            {/* on phones the time lives in the header beside the DEMO mark */}
+            <span className="hidden md:inline">
+              <span className="mx-2 text-muted-foreground/50">·</span>
+              {clock(now)}
+            </span>
           </p>
           {mode === "entrada" && (
             <Button size="sm" onClick={() => setLookupOpen(true)}>
@@ -305,7 +310,7 @@ export default function NewSalePage() {
                     qty ? "bg-primary text-primary-foreground" : "bg-card hover:bg-secondary",
                   )}
                 >
-                  <span className="text-[15px] font-semibold leading-snug pr-8">{p.name}</span>
+                  <span className="text-[15px] font-semibold leading-snug pr-8 line-clamp-2 [overflow-wrap:anywhere]">{p.name}</span>
                   <span className={cx("font-mono text-sm mt-3", qty ? "text-primary-foreground/80" : "text-ink-2")}>{bs(p.price)}</span>
                   {qty > 0 && (
                     <span className="absolute top-3 right-3 min-w-7 h-7 px-1.5 rounded-full bg-primary-foreground text-primary font-mono text-sm font-bold grid place-items-center">{qty}</span>
@@ -322,12 +327,12 @@ export default function NewSalePage() {
 
       {/* Checkout (desktop) */}
       <aside className="hidden xl:block">
-        <div className="sticky top-7 rounded-2xl border border-line bg-card overflow-hidden">{checkout}</div>
+        <div className="sticky top-7 max-h-[calc(100dvh-3.5rem)] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-card">{checkout}</div>
       </aside>
 
       {/* Charge bar (phones and tablets): the money is the biggest thing on screen */}
       {count > 0 && (
-        <div className="xl:hidden fixed inset-x-0 md:left-60 bottom-16 md:bottom-0 z-20 px-4 pt-3 pb-4 bg-background border-t border-line">
+        <div className="xl:hidden fixed inset-x-0 md:left-60 bottom-[calc(4rem+env(safe-area-inset-bottom))] md:bottom-0 z-20 px-4 pt-3 pb-4 md:pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background border-t border-line">
           <div className="flex items-end justify-between mb-3">
             <span className="font-mono text-xs tracking-[0.1em] uppercase text-muted-foreground pb-1">{summary}</span>
             <span className="text-4xl font-extrabold tracking-[-0.03em] leading-none tabular">{bs(total)}</span>
@@ -353,9 +358,9 @@ export default function NewSalePage() {
 }
 
 /** A wristband: the plan's ink as a closed band with its snap, the leading mark of every plan row. */
-function Wristband({ ink, live }: { ink: Ink; live: boolean }) {
+function Wristband({ ink, live, dim }: { ink: Ink; live: boolean; dim?: boolean }) {
   return (
-    <span aria-hidden className={cx("relative h-12 w-4 rounded-full shrink-0", live ? "bg-background" : INK_BG[ink])}>
+    <span aria-hidden className={cx("relative h-12 w-4 rounded-full shrink-0 transition-opacity duration-100", live ? "bg-background" : INK_BG[ink], dim && "opacity-35")}>
       <span className={cx("absolute left-1/2 top-2 -translate-x-1/2 size-1.5 rounded-full", live ? INK_BG[ink] : "bg-background")} />
     </span>
   );
@@ -388,19 +393,19 @@ function EntryRow({
   return (
     <div
       className={cx(
-        "rounded-2xl h-[76px] pl-4 pr-3 flex items-center gap-3.5 transition-[background-color,opacity,transform] duration-100",
+        "rounded-2xl min-h-[76px] py-2.5 pl-4 pr-3 flex items-center gap-3.5 transition-[background-color,opacity,transform] duration-100",
         live ? cx(INK_BG[ink], "text-background -translate-y-0.5") : "bg-card",
-        dim && "opacity-55",
         soldOut && "opacity-40",
       )}
     >
-      <Wristband ink={ink} live={live} />
+      {/* while another plan is live, the rest step back through band and name only; controls stay full strength */}
+      <Wristband ink={ink} live={live} dim={dim} />
       <div className="flex-1 min-w-0">
-        <p className="font-bold text-[17px] leading-tight truncate">
+        <p className={cx("font-bold text-[17px] leading-tight line-clamp-2 [overflow-wrap:anywhere] transition-colors duration-100", dim && "text-ink-2")}>
           {p.name}
           {people > 1 && <span className={cx("ml-2 font-mono text-xs font-medium", live ? "text-background/70" : "text-muted-foreground")}>×{people}</span>}
         </p>
-        <p className={cx("text-sm mt-0.5 truncate", live ? "text-background/75" : "text-ink-2")}>
+        <p className={cx("text-sm mt-0.5 leading-snug", live ? "text-background/75" : "text-ink-2")}>
           {price === 0 ? <span className={live ? "font-bold" : "text-ok font-semibold"}>Gratis</span> : <span className="font-mono">{bs(price)}</span>}
           {presale && p.presale_price != null && p.presale_price !== p.price && <span className="ml-1.5 font-mono text-xs line-through opacity-70">{bs(p.price)}</span>}
           {freeNow && <span> · hasta {p.free_until}, luego {bs(p.price)}</span>}
@@ -417,7 +422,7 @@ function EntryRow({
           onClick={() => onAdd(p.id, -1)}
           disabled={!qty}
           className={cx(
-            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-colors duration-100",
+            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-[background-color,transform] duration-100 ease-out active:scale-[0.92]",
             live ? "bg-background/90 text-foreground" : "bg-secondary text-ink hover:bg-secondary/70",
           )}
           aria-label={`Quitar una ${p.name}`}
@@ -431,7 +436,7 @@ function EntryRow({
           onClick={() => onAdd(p.id, 1)}
           disabled={left <= 0}
           className={cx(
-            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-colors duration-100",
+            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-[background-color,transform] duration-100 ease-out active:scale-[0.92]",
             live ? "bg-background text-foreground" : "bg-foreground text-background hover:bg-foreground/90",
           )}
           aria-label={`Agregar una ${p.name}`}
@@ -448,11 +453,13 @@ function Stamp({ amount, at, presale }: { amount: number; at: string; presale: b
   const ink: Ink = presale ? "violet" : "pink";
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] grid place-items-center">
-      <div className={cx("size-48 rounded-full border-[6px] grid place-items-center animate-stamp bg-background/85", INK_BORDER[ink], INK_TEXT[ink])}>
+      <div className={cx("size-48 rounded-full border-[6px] grid place-items-center animate-stamp bg-background shadow-[0_12px_40px_rgb(11_8_23/0.55)]", INK_BORDER[ink], INK_TEXT[ink])}>
         <div className={cx("size-[164px] rounded-full border-2 flex flex-col items-center justify-center gap-1", INK_BORDER[ink])}>
           <span className="text-[32px] font-extrabold tracking-[-0.02em] leading-none">{presale ? "PREVENTA" : "PAGADO"}</span>
-          <span className="font-mono text-sm font-bold">
-            {time(at)} · {bs(amount)}
+          <span className="font-mono text-[13px] font-bold leading-tight text-center whitespace-nowrap">
+            {clock(at)}
+            <br />
+            {bs(amount)}
           </span>
           <span className="font-mono text-[11px] tracking-[0.2em]">DEMO</span>
         </div>
@@ -505,7 +512,14 @@ function Checkout({
   const [proof, setProof] = useState<{ file: Blob; hash: string; preview: string } | null>(null);
   const [dups, setDups] = useState<DuplicateMatch[]>([]);
   const [saving, setSaving] = useState(false);
+  const [tried, setTried] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const ciRef = useRef<HTMLInputElement>(null);
+  const nameMissing = tried && hasEntries && !customerName.trim();
+  const ciMissing = tried && hasEntries && !customerCi.trim();
+  const showMore = moreOpen || !!(promoterCode || tableLabel || note);
 
   const amountNum = amount === "" ? total : Number(amount);
   const mismatch = lines.length > 0 && Math.abs(amountNum - total) > 0.009;
@@ -560,12 +574,21 @@ function Checkout({
     if (proof) URL.revokeObjectURL(proof.preview);
     setProof(null);
     setDups([]);
+    setTried(false);
+    setMoreOpen(false);
   };
 
   const save = async () => {
     if (!lines.length) return;
     if (!(amountNum >= 0)) return onError("Monto inválido");
-    if (hasEntries && (!customerName.trim() || !customerCi.trim())) return onError("Ingresa nombre completo y CI del titular");
+    if (hasEntries && (!customerName.trim() || !customerCi.trim())) {
+      setTried(true);
+      // point at the field to fix, not only a toast that may be far from it
+      const target = !customerName.trim() ? nameRef.current : ciRef.current;
+      target?.scrollIntoView({ block: "center", behavior: "smooth" });
+      target?.focus({ preventScroll: true });
+      return onError("Ingresa nombre completo y CI del titular");
+    }
     if (barInPresale) return onError("La preventa solo puede incluir entradas: quita los productos de barra");
     setSaving(true);
     try {
@@ -645,7 +668,7 @@ function Checkout({
 
       {/* Buyer of the entries */}
       {hasEntries && (
-        <div className="mx-5 mt-5 rounded-2xl bg-secondary p-4 space-y-3">
+        <div className="mx-5 mt-5 pt-4 border-t border-line space-y-3">
           <div className="flex items-center justify-between">
             <p className="font-bold flex items-center gap-2">
               <IdCard size={18} className="text-ink-pink" /> Titular
@@ -657,11 +680,27 @@ function Checkout({
           <div className="grid grid-cols-[1fr_128px] gap-2">
             <label className="block">
               <Label>Nombre completo *</Label>
-              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ana Pérez Quispe" autoComplete="off" className="bg-card" />
+              <Input
+                ref={nameRef}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Ana Pérez Quispe"
+                autoComplete="off"
+                aria-invalid={nameMissing || undefined}
+                
+              />
             </label>
             <label className="block">
               <Label>CI *</Label>
-              <Input value={customerCi} onChange={(e) => setCustomerCi(e.target.value)} placeholder="1234567 LP" autoComplete="off" className="bg-card font-mono" />
+              <Input
+                ref={ciRef}
+                value={customerCi}
+                onChange={(e) => setCustomerCi(e.target.value)}
+                placeholder="1234567 LP"
+                autoComplete="off"
+                aria-invalid={ciMissing || undefined}
+                className="font-mono"
+              />
             </label>
           </div>
           {people > 1 && (
@@ -672,22 +711,18 @@ function Checkout({
                 onChange={(e) => setGuestsText(e.target.value)}
                 rows={Math.min(Math.max(people - 1, 2), 6)}
                 placeholder={"Un nombre por línea\nOpcional: Nombre, CI"}
-                className="w-full rounded-lg bg-card border border-line px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-y"
+                className="w-full rounded-lg bg-surface-2 border border-line px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-y"
               />
               <span className="block font-mono text-xs text-muted-foreground mt-1">
                 {guests.length} de {people - 1} acompañantes{guests.length > people - 1 ? " · hay más nombres que lugares" : ""}
               </span>
             </label>
           )}
-          <label className="block">
-            <Label>Código de relacionador (opcional)</Label>
-            <Input value={promoterCode} onChange={(e) => setPromoterCode(e.target.value.toUpperCase())} placeholder="JUAN10" autoComplete="off" className="bg-card font-mono uppercase" />
-          </label>
         </div>
       )}
 
       {/* Payment */}
-      <div className="px-5 pt-5 pb-6 space-y-4">
+      <div className="mx-5 mt-5 pt-4 pb-5 border-t border-line space-y-4">
         <div>
           <Label>Cómo pagó</Label>
           <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Método de pago">
@@ -700,7 +735,7 @@ function Checkout({
                   aria-checked={on}
                   onClick={() => setMethod(m.id)}
                   className={cx(
-                    "h-16 rounded-xl flex flex-col items-center justify-center gap-1 text-sm font-semibold transition-colors duration-100",
+                    "h-16 rounded-xl flex flex-col items-center justify-center gap-1 text-sm font-semibold transition-[background-color,color,transform] duration-100 ease-out active:scale-[0.96]",
                     on ? "bg-primary text-primary-foreground" : "bg-secondary text-ink-2 hover:text-ink",
                   )}
                 >
@@ -761,20 +796,40 @@ function Checkout({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <Label>Monto recibido</Label>
-            <Input type="number" inputMode="decimal" step="0.01" min="0" value={amount} placeholder={total.toFixed(2)} onChange={(e) => setAmount(e.target.value)} className="font-mono" />
-          </label>
-          <label className="block">
-            <Label>Mesa / referencia</Label>
-            <Input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} placeholder="Opcional" />
-          </label>
-        </div>
         <label className="block">
-          <Label>Nota</Label>
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opcional" />
+          <Label>Monto recibido</Label>
+          <Input type="number" inputMode="decimal" step="0.01" min="0" value={amount} placeholder={total.toFixed(2)} onChange={(e) => setAmount(e.target.value)} className="font-mono" />
         </label>
+
+        {/* Optional details, one tap away */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setMoreOpen((v) => !v)}
+            aria-expanded={showMore}
+            className="h-10 -ml-1 px-1 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2 hover:text-ink"
+          >
+            <ChevronDown size={16} className={cx("transition-transform duration-150", showMore && "rotate-180")} /> Más datos
+          </button>
+          {showMore && (
+            <div className="mt-2 space-y-3 animate-in fade-in-0 slide-in-from-top-1 duration-150">
+              {hasEntries && (
+                <label className="block">
+                  <Label>Código de relacionador (opcional)</Label>
+                  <Input value={promoterCode} onChange={(e) => setPromoterCode(e.target.value.toUpperCase())} placeholder="JUAN10" autoComplete="off" className="font-mono uppercase" />
+                </label>
+              )}
+              <label className="block">
+                <Label>Mesa / referencia</Label>
+                <Input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} placeholder="Opcional" />
+              </label>
+              <label className="block">
+                <Label>Nota</Label>
+                <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Opcional" />
+              </label>
+            </div>
+          )}
+        </div>
 
         {(mismatch || dups.length > 0) && (
           <div className="rounded-xl bg-warn/12 text-warn p-3 space-y-1.5 text-sm" role="alert">
@@ -796,7 +851,10 @@ function Checkout({
             ))}
           </div>
         )}
+      </div>
 
+      {/* Save stays pinned to the bottom of the sheet / panel: one thumb, every sale */}
+      <div className="sticky bottom-0 z-10 bg-card border-t border-line px-5 pt-3 pb-[calc(1rem+env(safe-area-inset-bottom))] xl:pb-4">
         <Button variant="primary" size="lg" className="w-full h-14 text-lg font-bold rounded-2xl" disabled={saving} onClick={save}>
           {saving ? "Guardando…" : `Guardar · ${bs(amountNum)}`}
         </Button>

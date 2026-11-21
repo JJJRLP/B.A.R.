@@ -19,7 +19,7 @@ export function Button({
     <button
       {...props}
       className={cx(
-        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors select-none",
+        "inline-flex items-center justify-center gap-2 rounded-lg font-medium select-none transition-[background-color,color,border-color,transform] duration-100 ease-out active:scale-[0.97]",
         "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         size === "sm" && "h-8 px-3 text-sm",
         size === "md" && "h-10 px-4 text-sm",
@@ -35,13 +35,15 @@ export function Button({
   );
 }
 
-export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+export function Input({ className, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       {...props}
       className={cx(
         "h-10 w-full rounded-lg bg-surface-2 border border-line px-3 text-sm text-ink placeholder:text-muted-foreground",
         "focus:outline-none focus:border-primary",
+        // a field flagged invalid stays red, focused or not
+        "aria-invalid:border-bad aria-invalid:focus:border-bad",
         className,
       )}
     />
@@ -134,7 +136,7 @@ export function Modal({
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className={cx(
-          "w-full overflow-y-auto overscroll-contain bg-surface border border-line sm:rounded-2xl",
+          "w-full overflow-y-auto overscroll-contain bg-surface border border-line sm:rounded-2xl animate-in duration-200 ease-out slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-[0.98] fade-in-0",
           fullOnMobile ? "h-dvh max-h-dvh rounded-none sm:h-auto sm:max-h-[92vh]" : "max-h-[92vh] rounded-t-2xl",
           wide ? "sm:max-w-3xl" : "sm:max-w-md",
         )}

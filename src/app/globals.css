@@ -107,6 +107,26 @@
   html {
     color-scheme: dark;
     scrollbar-color: var(--border) transparent;
+    -webkit-text-size-adjust: 100%;
+    /* an app with its own scroll areas: no pull-to-refresh or page rubber-band */
+    overscroll-behavior: none;
+  }
+  body {
+    overscroll-behavior: none;
+  }
+  /* iOS zooms into inputs under 16px and never zooms back */
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+  /* no 300 ms double-tap wait on controls */
+  button, a, [role="button"], [role="radio"], label {
+    touch-action: manipulation;
+  }
+  /* controls are not content: no long-press selection or callout */
+  button, [role="button"], [role="radio"] {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
   }
   body {
     @apply bg-background text-foreground;

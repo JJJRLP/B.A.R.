@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, ClipboardList, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -74,9 +75,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Top bar (mobile) */}
-      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 border-b border-line bg-bg/95 backdrop-blur">
+      <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 box-content h-14 pt-[env(safe-area-inset-top)] border-b border-line bg-background">
         <div className="flex items-center gap-2 min-w-0">
           <Wordmark className="text-xl" />
+          <HeaderClock />
           {demo && <span className="text-[11px] text-primary border border-primary/30 rounded px-1.5">demo</span>}
         </div>
         <div className="flex items-center">
@@ -93,10 +95,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="flex-1 min-w-0 px-4 md:px-8 py-5 md:py-7 pb-24 md:pb-8">{children}</main>
+      <main className="flex-1 min-w-0 px-4 md:px-8 py-5 md:py-7 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8">{children}</main>
 
       {/* Bottom nav (mobile) */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-bg/95 backdrop-blur flex">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-background flex pb-[env(safe-area-inset-bottom)]">
         {items
           .filter((n) => n.mobile)
           .map((n) => {
@@ -115,4 +117,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </nav>
     </div>
   );
+}
+
+/** The night's clock beside the DEMO mark (24h, La Paz). Empty until mounted so server and client agree. */
+function HeaderClock() {
+  const [t, setT] = useState("");
+  useEffect(() => {
+    const fmt = new Intl.DateTimeFormat("es-BO", { timeZone: "America/La_Paz", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    const tick = () => setT(fmt.format(new Date()));
+    tick();
+    const id = setInterval(tick, 15_000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="font-mono text-xs tracking-[0.1em] text-muted-foreground tabular">{t}</span>;
 }
