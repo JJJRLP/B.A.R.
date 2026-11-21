@@ -16,10 +16,10 @@ export function businessDay(d: Date | string = new Date()): string {
 }
 
 export const time = (iso: string) =>
-  new Intl.DateTimeFormat("es-BO", { timeZone: TZ, hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  new Intl.DateTimeFormat("es-BO", { timeZone: TZ, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 
 export const dateTime = (iso: string) =>
-  new Intl.DateTimeFormat("es-BO", { timeZone: TZ, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+  new Intl.DateTimeFormat("es-BO", { timeZone: TZ, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 
 export const longDay = (day: string) =>
   new Intl.DateTimeFormat("es-BO", { timeZone: "UTC", weekday: "long", day: "numeric", month: "long" }).format(new Date(day + "T00:00:00Z"));
@@ -60,3 +60,7 @@ export function matchesPerson(
   const has = (v?: string | null) => !!v && v.toLowerCase().includes(t);
   return has(s.customer_name) || has(s.customer_ci) || (s.guests ?? []).some((g) => has(g.full_name) || has(g.ci));
 }
+
+/** Short night label for tables and ranges: "sáb 21 nov". */
+export const shortDay = (day: string) =>
+  new Intl.DateTimeFormat("es-BO", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" }).format(new Date(day + "T00:00:00Z")).replace(/\./g, "");

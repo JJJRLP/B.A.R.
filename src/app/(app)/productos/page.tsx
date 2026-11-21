@@ -75,7 +75,7 @@ export default function ProductsPage() {
             <section key={s.type}>
               <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className={cx("h-8 w-8 rounded-lg grid place-items-center", s.type === "entrada" ? "bg-primary/12 text-primary" : "bg-surface-2 text-ink-2")}>
+                  <span className={cx("h-8 w-8 rounded-lg grid place-items-center", s.type === "entrada" ? "bg-ink-pink/15 text-ink-pink" : "bg-surface-2 text-ink-2")}>
                     <s.icon size={17} />
                   </span>
                   <div>
@@ -96,7 +96,7 @@ export default function ProductsPage() {
                 <div className="space-y-4">
                   {s.groups.map(({ c, items }) => (
                     <div key={c}>
-                      {(s.groups.length > 1 || s.type === "consumo") && <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">{c}</h3>}
+                      {(s.groups.length > 1 || s.type === "consumo") && <h3 className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mb-2">{c}</h3>}
                       <Card className="divide-y divide-line">
                         {items.map((p) => (
                           <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
@@ -112,7 +112,7 @@ export default function ProductsPage() {
                                 </p>
                               )}
                             </div>
-                            <span className="text-sm tabular w-24 text-right">{p.price === 0 ? "Gratis" : bs(p.price)}</span>
+                            <span className="text-sm font-mono tabular w-24 text-right">{p.price === 0 ? "Gratis" : bs(p.price)}</span>
                             <button
                               onClick={() => toggle(p)}
                               className={cx("relative h-5 w-9 rounded-full transition-colors shrink-0", p.active ? "bg-ok/70" : "bg-line")}
@@ -155,10 +155,10 @@ export default function ProductsPage() {
                     onClick={() => setDraft({ ...draft, type: s.type, category: draft.type === s.type ? draft.category : categoriesOf(s.type)[0] ?? (s.type === "entrada" ? "Entradas" : "") })}
                     className={cx(
                       "h-11 rounded-lg border flex items-center justify-center gap-2 text-sm",
-                      draft.type === s.type ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                      draft.type === s.type ? "border-foreground bg-foreground text-background" : "border-line text-ink-2 hover:text-ink",
                     )}
                   >
-                    <s.icon size={16} className={draft.type === s.type ? "text-primary" : ""} />
+                    <s.icon size={16} />
                     {s.type === "entrada" ? "Entrada" : "Barra"}
                   </button>
                 ))}
@@ -182,7 +182,7 @@ export default function ProductsPage() {
             ) : (
               <label className="block">
                 <Label>Precio (Bs)</Label>
-                <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="tabular" />
+                <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="font-mono tabular" />
               </label>
             )}
             <label className="block">
@@ -195,7 +195,7 @@ export default function ProductsPage() {
                 placeholder="Sin costo registrado"
                 value={draft.cost ?? ""}
                 onChange={(e) => setDraft({ ...draft, cost: e.target.value === "" ? null : Number(e.target.value) })}
-                className="tabular"
+                className="font-mono tabular"
               />
               <span className="block text-xs text-muted-foreground mt-1">Se usa para calcular el costo y el margen en el cierre del día.</span>
             </label>
@@ -220,7 +220,7 @@ export default function ProductsPage() {
 }
 
 function Tag({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[11px]">{children}</span>;
+  return <span className="inline-flex rounded-md bg-secondary text-ink-2 px-1.5 py-0.5 text-[11px]">{children}</span>;
 }
 
 type FreeMode = "paid" | "until" | "free";
@@ -251,11 +251,11 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
               onClick={() => setMode(o.m)}
               className={cx(
                 "text-left rounded-lg border px-3 py-2 transition-colors",
-                mode === o.m ? "border-primary bg-primary/10" : "border-line hover:border-muted-foreground",
+                mode === o.m ? "border-foreground bg-secondary" : "border-line hover:border-muted-foreground",
               )}
             >
               <span className="flex items-center gap-2 text-sm">
-                <span className={cx("h-3.5 w-3.5 rounded-full border-2 shrink-0", mode === o.m ? "border-primary bg-primary" : "border-muted-foreground")} />
+                <span className={cx("h-3.5 w-3.5 rounded-full border-2 shrink-0", mode === o.m ? "border-foreground bg-foreground" : "border-muted-foreground")} />
                 {o.label}
               </span>
               <span className="block pl-5.5 text-xs text-muted-foreground">{o.hint}</span>
@@ -275,7 +275,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
             disabled={mode === "free"}
             value={draft.price}
             onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })}
-            className="tabular"
+            className="font-mono tabular"
           />
         </label>
         <label className={cx("block", mode !== "until" && "opacity-40")}>
@@ -294,7 +294,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           placeholder="Igual al precio normal"
           value={draft.presale_price ?? ""}
           onChange={(e) => setDraft({ ...draft, presale_price: e.target.value === "" ? null : Number(e.target.value) })}
-          className="tabular"
+          className="font-mono tabular"
         />
         <span className="block text-xs text-muted-foreground mt-1">Se cobra al vender en preventa para una noche futura.</span>
       </label>
@@ -308,7 +308,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           step="1"
           value={draft.people_per_unit ?? 1}
           onChange={(e) => setDraft({ ...draft, people_per_unit: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
-          className="tabular"
+          className="font-mono tabular"
         />
         <span className="block text-xs text-muted-foreground mt-1">Personas que entran con cada unidad: 1 para una entrada individual, por ejemplo 12 para una mesa VIP.</span>
       </label>
@@ -323,7 +323,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           placeholder="Sin límite"
           value={draft.max_per_night ?? ""}
           onChange={(e) => setDraft({ ...draft, max_per_night: e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null })}
-          className="tabular"
+          className="font-mono tabular"
         />
         <span className="block text-xs text-muted-foreground mt-1">Al llegar al cupo, ya no se puede vender esta entrada esa noche.</span>
       </label>

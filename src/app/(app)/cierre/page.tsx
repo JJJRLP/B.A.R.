@@ -144,8 +144,8 @@ export default function ClosePage() {
             <Card className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                    <Ticket size={14} className="text-primary" /> Puerta · Entradas
+                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-1.5">
+                    <Ticket size={14} className="text-ink-pink" /> Puerta · Entradas
                   </p>
                   <p className="text-2xl font-semibold tabular mt-1">{bs(s.entryAmount)}</p>
                 </div>
@@ -161,11 +161,11 @@ export default function ClosePage() {
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+              <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground flex items-center gap-1.5">
                 <GlassWater size={14} /> Barra · Consumo
               </p>
               <p className="text-2xl font-semibold tabular mt-1">{bs(s.barAmount)}</p>
-              {a.nightPeople > 0 && <p className="text-xs text-ink-2 mt-3">Consumo promedio por persona: <span className="text-ink tabular">{bs(s.barAmount / a.nightPeople)}</span></p>}
+              {a.nightPeople > 0 && <p className="text-xs text-ink-2 mt-3">Consumo promedio por persona: <span className="text-ink font-mono tabular">{bs(s.barAmount / a.nightPeople)}</span></p>}
             </Card>
           </div>
 
@@ -191,7 +191,7 @@ export default function ClosePage() {
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-sm min-w-[560px]">
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                       <th className="text-left font-medium pb-2">Persona</th>
                       <th className="text-right font-medium pb-2">Ventas</th>
                       <th className="text-right font-medium pb-2">Efectivo</th>
@@ -205,12 +205,12 @@ export default function ClosePage() {
                     {s.byStaff.map((r) => (
                       <tr key={r.name}>
                         <td className="py-2.5 font-medium">{r.name}</td>
-                        <td className="py-2.5 text-right tabular text-ink-2">{r.count}</td>
-                        <td className="py-2.5 text-right tabular">{bs(r.cash)}</td>
-                        <td className="py-2.5 text-right tabular">{bs(r.qr)}</td>
-                        <td className="py-2.5 text-right tabular">{bs(r.card)}</td>
-                        <td className={cx("py-2.5 text-right tabular", r.voided ? "text-bad" : "text-muted-foreground")}>{r.voided}</td>
-                        <td className="py-2.5 text-right tabular font-semibold">{bs(r.total)}</td>
+                        <td className="py-2.5 text-right font-mono tabular text-ink-2">{r.count}</td>
+                        <td className="py-2.5 text-right font-mono tabular">{bs(r.cash)}</td>
+                        <td className="py-2.5 text-right font-mono tabular">{bs(r.qr)}</td>
+                        <td className="py-2.5 text-right font-mono tabular">{bs(r.card)}</td>
+                        <td className={cx("py-2.5 text-right font-mono tabular", r.voided ? "text-bad" : "text-muted-foreground")}>{r.voided}</td>
+                        <td className="py-2.5 text-right font-mono tabular font-semibold">{bs(r.total)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -225,7 +225,7 @@ export default function ClosePage() {
               <h2 className="font-semibold mb-4">Por método de pago</h2>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                     <th className="text-left font-medium pb-2">Método</th>
                     <th className="text-right font-medium pb-2">Pagos</th>
                     <th className="text-right font-medium pb-2">Monto</th>
@@ -235,8 +235,8 @@ export default function ClosePage() {
                   {METHODS.map((m) => (
                     <tr key={m}>
                       <td className="py-2.5">{METHOD_LABEL[m]}</td>
-                      <td className="py-2.5 text-right tabular text-ink-2">{s.byMethod[m].count}</td>
-                      <td className="py-2.5 text-right tabular">{bs(s.byMethod[m].amount)}</td>
+                      <td className="py-2.5 text-right font-mono tabular text-ink-2">{s.byMethod[m].count}</td>
+                      <td className="py-2.5 text-right font-mono tabular">{bs(s.byMethod[m].amount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -247,11 +247,11 @@ export default function ClosePage() {
                 <div className="flex items-end gap-3">
                   <label className="flex-1">
                     <Label>Efectivo contado en caja</Label>
-                    <Input type="number" inputMode="decimal" step="0.01" value={cashCount} onChange={(e) => setCashCount(e.target.value)} placeholder={s.byMethod.cash.amount.toFixed(2)} className="tabular" />
+                    <Input type="number" inputMode="decimal" step="0.01" value={cashCount} onChange={(e) => setCashCount(e.target.value)} placeholder={s.byMethod.cash.amount.toFixed(2)} className="font-mono tabular" />
                   </label>
                   <div className="text-right pb-2 min-w-28">
                     <p className="text-xs text-muted-foreground">Diferencia</p>
-                    <p className={cx("font-semibold tabular", cashDiff === null ? "text-muted-foreground" : Math.abs(cashDiff) < 0.01 ? "text-ok" : "text-bad")}>
+                    <p className={cx("font-semibold font-mono tabular", cashDiff === null ? "text-muted-foreground" : Math.abs(cashDiff) < 0.01 ? "text-ok" : "text-bad")}>
                       {cashDiff === null ? "—" : `${cashDiff > 0 ? "+" : ""}${bs(cashDiff)}`}
                     </p>
                   </div>
@@ -278,7 +278,7 @@ export default function ClosePage() {
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                       <th className="text-left font-medium pb-2">Producto</th>
                       <th className="text-right font-medium pb-2">Cant.</th>
                       <th className="text-right font-medium pb-2">Monto</th>
@@ -294,29 +294,29 @@ export default function ClosePage() {
                     .map((g) => (
                       <tbody key={g.label} className="divide-y divide-line">
                         <tr>
-                          <td colSpan={3} className="pt-4 pb-1.5 text-xs uppercase tracking-wide text-primary">
+                          <td colSpan={3} className="pt-4 pb-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-2">
                             {g.label}
                           </td>
                         </tr>
                         {g.rows.map((p) => (
                           <tr key={p.name}>
                             <td className="py-2.5">{p.name}</td>
-                            <td className="py-2.5 text-right tabular text-ink-2">{p.qty}</td>
-                            <td className="py-2.5 text-right tabular">{bs(p.amount)}</td>
+                            <td className="py-2.5 text-right font-mono tabular text-ink-2">{p.qty}</td>
+                            <td className="py-2.5 text-right font-mono tabular">{bs(p.amount)}</td>
                           </tr>
                         ))}
                         <tr className="text-ink-2">
                           <td className="py-2 text-xs">Subtotal {g.label.toLowerCase()}</td>
-                          <td className="py-2 text-right tabular text-xs">{g.rows.reduce((a, p) => a + p.qty, 0)}</td>
-                          <td className="py-2 text-right tabular text-xs">{bs(g.amount)}</td>
+                          <td className="py-2 text-right font-mono tabular text-xs">{g.rows.reduce((a, p) => a + p.qty, 0)}</td>
+                          <td className="py-2 text-right font-mono tabular text-xs">{bs(g.amount)}</td>
                         </tr>
                       </tbody>
                     ))}
                   <tfoot>
                     <tr className="border-t border-line font-medium">
                       <td className="pt-3">Total</td>
-                      <td className="pt-3 text-right tabular" />
-                      <td className="pt-3 text-right tabular">{bs(s.sold)}</td>
+                      <td className="pt-3 text-right font-mono tabular" />
+                      <td className="pt-3 text-right font-mono tabular">{bs(s.sold)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -332,7 +332,7 @@ export default function ClosePage() {
 function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" }) {
   return (
     <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
       <p className={cx("text-xl md:text-2xl font-semibold tabular mt-1", tone === "ok" && "text-ok", tone === "warn" && "text-warn", tone === "bad" && "text-bad")}>{value}</p>
       {hint && <p className="text-xs text-ink-2 mt-0.5">{hint}</p>}
     </Card>

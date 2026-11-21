@@ -79,17 +79,17 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                  {r.is_presale && <span className="rounded-md bg-primary/12 text-primary px-2 py-0.5 text-xs font-medium">Preventa</span>}
+                  {r.is_presale && <span className="rounded-md bg-ink-violet/15 text-ink-violet px-2 py-0.5 text-xs font-medium">Preventa</span>}
                   <span>{r.entries}</span>
                   <span className="text-ink-2 flex items-center gap-1">
                     <Users size={14} /> {r.people} {r.people === 1 ? "persona" : "personas"}
                   </span>
-                  <span className="text-ink-2 tabular">{bs(r.total)}</span>
+                  <span className="text-ink-2 font-mono tabular">{bs(r.total)}</span>
                   {r.promoter_code && <span className="text-ink-2">Relacionador <span className="font-mono text-ink">{r.promoter_code}</span></span>}
                 </div>
                 {r.guests.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-line">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">Acompañantes</p>
+                    <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mb-1.5">Acompañantes</p>
                     <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
                       {r.guests.map((g, i) => (
                         <li key={i} className={cx(hit(g.full_name) || hit(g.ci) ? "text-primary font-medium" : "text-ink-2")}>

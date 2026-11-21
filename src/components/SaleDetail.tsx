@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, X } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { toast } from "sonner";
-import { bs, dateTime } from "@/lib/format";
+import { bs, dateTime, shortDay } from "@/lib/format";
 import type { Payment, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
@@ -86,7 +86,7 @@ export function VerifyActions({ payment, onDone }: { payment: Payment; onDone: (
 /** Who did what to this sale, in order. */
 function History({ sale }: { sale: Sale }) {
   const steps: { at: string; who: string; what: string; tone: string }[] = [
-    { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-primary" },
+    { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-success" },
   ];
   if (sale.status === "void")
     steps.push({ at: sale.voided_at ?? "", who: sale.voided_by_name ?? "—", what: `anuló la venta${sale.void_reason ? `: “${sale.void_reason}”` : ""}`, tone: "bg-bad" });
@@ -102,7 +102,7 @@ function History({ sale }: { sale: Sale }) {
               {s.who && <span className="font-medium">{s.who} </span>}
               <span className={s.who ? "text-ink-2" : "text-warn"}>{s.what}</span>
             </p>
-            {s.at && <p className="text-xs text-muted-foreground tabular">{dateTime(s.at)}</p>}
+            {s.at && <p className="text-xs text-muted-foreground font-mono tabular">{dateTime(s.at)}</p>}
           </li>
         ))}
       </ol>
@@ -140,18 +140,18 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
             {sale.promoter_code && <span>Relacionador: <span className="text-ink font-mono">{sale.promoter_code}</span></span>}
           </div>
           {sale.is_presale && sale.event_day && (
-            <p className="text-sm rounded-lg border border-primary/40 bg-primary/[0.07] px-3 py-2">
-              Preventa para la noche del <span className="font-medium">{sale.event_day}</span>
+            <p className="text-sm rounded-lg bg-ink-violet text-background px-3 py-2">
+              Preventa para la noche del <span className="font-medium">{shortDay(sale.event_day)}</span>
             </p>
           )}
           {(sale.customer_name || sale.customer_ci) && (
             <div className="rounded-lg border border-line bg-surface-2/40 p-3 text-sm">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Titular</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mb-1">Titular</p>
               <p className="font-medium">{sale.customer_name ?? "—"}</p>
               <p className="text-ink-2">CI {sale.customer_ci ?? "—"}</p>
               {sale.guests && sale.guests.length > 0 && (
                 <>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground mt-3 mb-1">Acompañantes ({sale.guests.length})</p>
+                  <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mt-3 mb-1">Acompañantes ({sale.guests.length})</p>
                   <ul className="space-y-0.5 text-ink-2">
                     {sale.guests.map((g, i) => (
                       <li key={i}>
@@ -170,13 +170,13 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
                 <span>
                   {i.qty} × {i.name}
                 </span>
-                <span className="tabular">{bs(i.subtotal)}</span>
+                <span className="font-mono tabular">{bs(i.subtotal)}</span>
               </li>
             ))}
           </ul>
           <div className="flex justify-between items-baseline">
             <span className="text-sm text-ink-2">Total</span>
-            <span className="text-xl font-semibold tabular">{bs(sale.total)}</span>
+            <span className="text-xl font-semibold font-mono tabular">{bs(sale.total)}</span>
           </div>
           {sale.note && <p className="text-sm text-ink-2">Nota: {sale.note}</p>}
           <History sale={sale} />
@@ -188,7 +188,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm">{METHOD_LABEL[p.method]}</p>
-                  <p className="text-lg font-semibold tabular">{bs(p.amount)}</p>
+                  <p className="text-lg font-semibold font-mono tabular">{bs(p.amount)}</p>
                 </div>
               </div>
               {p.reference && <p className="text-sm text-ink-2">Referencia: <span className="text-ink font-mono">{p.reference}</span></p>}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApi } from "@/lib/data";
-import { addDays, bs, businessDay } from "@/lib/format";
+import { addDays, bs, businessDay, shortDay } from "@/lib/format";
 import type { Product, Sale } from "@/lib/types";
 import { costSummary, peopleByNight, planRows, presaleSold, promoterRows, topProducts } from "@/lib/analytics";
 import { CostCard, PlansTable, PromotersTable, TopProducts } from "@/components/Analytics";
@@ -80,7 +80,7 @@ export default function ReportsPage() {
                 }}
                 className={cx(
                   "h-10 px-3 rounded-lg border text-sm",
-                  from === f && to === today ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                  from === f && to === today ? "border-foreground bg-foreground text-background" : "border-line text-ink-2 hover:text-ink",
                 )}
               >
                 {x.label}
@@ -112,7 +112,7 @@ export default function ReportsPage() {
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-sm" style={{ minWidth: 200 + r.grid.plans.length * 120 }}>
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                    <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                       <th className="text-left font-medium pb-2">Noche</th>
                       {r.grid.plans.map((p) => (
                         <th key={p.id} className="text-right font-medium pb-2">
@@ -128,13 +128,13 @@ export default function ReportsPage() {
                       const total = Object.values(row).reduce((a, n) => a + n, 0);
                       return (
                         <tr key={d}>
-                          <td className="py-2.5 tabular whitespace-nowrap">{d}</td>
+                          <td className="py-2.5 font-mono tabular whitespace-nowrap first-letter:uppercase">{shortDay(d)}</td>
                           {r.grid.plans.map((p) => (
-                            <td key={p.id} className={cx("py-2.5 text-right tabular", row[p.id] ? "" : "text-muted-foreground")}>
+                            <td key={p.id} className={cx("py-2.5 text-right font-mono tabular", row[p.id] ? "" : "text-muted-foreground")}>
                               {row[p.id] ?? "—"}
                             </td>
                           ))}
-                          <td className="py-2.5 text-right tabular font-semibold">{total}</td>
+                          <td className="py-2.5 text-right font-mono tabular font-semibold">{total}</td>
                         </tr>
                       );
                     })}
@@ -159,7 +159,7 @@ export default function ReportsPage() {
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">{label}</p>
       <p className="text-xl md:text-2xl font-semibold tabular mt-1">{value}</p>
       {hint && <p className="text-xs text-ink-2 mt-0.5">{hint}</p>}
     </Card>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Download, IdCard, Image as ImageIcon, Receipt, Search } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
-import { bs, businessDay, dateTime, time, longDay } from "@/lib/format";
+import { bs, businessDay, dateTime, time, longDay, shortDay } from "@/lib/format";
 import { exportSalesCsv } from "@/lib/csv";
 import type { PaymentMethod, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
@@ -46,7 +46,7 @@ export default function SalesPage() {
   const active = (sales ?? []).filter((s) => s.status !== "void");
   const total = active.reduce((a, s) => a + s.total, 0);
   const multiDay = from !== to;
-  const subtitle = isAdmin ? (multiDay ? `${from} → ${to}` : longDay(from)) : `Tus ventas de hoy · ${longDay(today)}`;
+  const subtitle = isAdmin ? (multiDay ? `${shortDay(from)} → ${shortDay(to)}` : longDay(from)) : `Tus ventas de hoy · ${longDay(today)}`;
 
   return (
     <div>
@@ -94,10 +94,10 @@ export default function SalesPage() {
 
       <div className="flex gap-6 mb-4 text-sm">
         <span className="text-ink-2">
-          Ventas: <span className="text-ink tabular">{active.length}</span>
+          Ventas: <span className="text-ink font-mono tabular">{active.length}</span>
         </span>
         <span className="text-ink-2">
-          Total: <span className="text-ink font-medium tabular">{bs(total)}</span>
+          Total: <span className="text-ink font-medium font-mono tabular">{bs(total)}</span>
         </span>
       </div>
 
@@ -116,11 +116,11 @@ export default function SalesPage() {
             <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-surface-2/60">
-                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                   <th className="text-left font-medium px-4 py-2.5 w-28">{multiDay ? "Fecha" : "Hora"}</th>
                   {isAdmin && <th className="text-left font-medium px-4 py-2.5 w-36">Registró</th>}
                   <th className="text-left font-medium px-4 py-2.5">Productos</th>
-                  <th className="text-left font-medium px-4 py-2.5 w-32">Método</th>
+                  <th className="text-left font-medium px-4 py-2.5 w-44">Método</th>
                   <th className="text-right font-medium px-4 py-2.5 w-28">Monto</th>
                   {isAdmin && <th className="text-left font-medium px-4 py-2.5 w-40">Anulada por</th>}
                 </tr>
@@ -134,7 +134,7 @@ export default function SalesPage() {
                       : null;
                   return (
                     <tr key={s.id} onClick={() => setSelected(s)} className={cx("cursor-pointer hover:bg-surface-2/60", s.status === "void" && "text-muted-foreground")}>
-                      <td className="px-4 py-3 tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(s.created_at) : time(s.created_at)}</td>
+                      <td className="px-4 py-3 font-mono tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(s.created_at) : time(s.created_at)}</td>
                       {isAdmin && <td className="px-4 py-3 font-medium whitespace-nowrap">{s.created_by_name ?? "—"}</td>}
                       <td className="px-4 py-3 max-w-0">
                         <p className="truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
@@ -150,19 +150,19 @@ export default function SalesPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-ink-2">
+                      <td className="px-4 py-3 text-ink-2 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1.5">
                           {p ? METHOD_LABEL[p.method] : "—"}
                           {p?.proof_path && <ImageIcon size={13} className="text-muted-foreground" aria-label="Con comprobante" />}
                         </span>
                       </td>
-                      <td className={cx("px-4 py-3 text-right tabular font-medium", s.status === "void" && "line-through")}>{bs(s.total)}</td>
+                      <td className={cx("px-4 py-3 text-right font-mono tabular font-medium", s.status === "void" && "line-through")}>{bs(s.total)}</td>
                       {isAdmin && (
                         <td className="px-4 py-3 text-xs">
                           {checker ? (
                             <>
                               <p className="text-ink">{checker.who}</p>
-                              {checker.at && <p className="text-muted-foreground tabular">{dateTime(checker.at)}</p>}
+                              {checker.at && <p className="text-muted-foreground font-mono tabular">{dateTime(checker.at)}</p>}
                             </>
                           ) : (
                             <span className="text-muted-foreground">—</span>
@@ -183,7 +183,7 @@ export default function SalesPage() {
                 return (
                   <li key={s.id}>
                     <button onClick={() => setSelected(s)} className={cx("w-full text-left px-4 py-3 flex items-center gap-3", s.status === "void" && "opacity-50")}>
-                      <span className="w-11 text-sm text-ink-2 tabular shrink-0">{time(s.created_at)}</span>
+                      <span className="w-11 text-sm text-ink-2 font-mono tabular shrink-0">{time(s.created_at)}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                         <p className="text-xs text-muted-foreground truncate">
@@ -193,7 +193,7 @@ export default function SalesPage() {
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-sm font-medium tabular">{bs(s.total)}</p>
+                        <p className="text-sm font-medium font-mono tabular">{bs(s.total)}</p>
                         {s.status === "void" && <StatusBadge status="void" />}
                       </div>
                     </button>

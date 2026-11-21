@@ -4,7 +4,7 @@ import { bs } from "@/lib/format";
 import type { CostSummary, PlanRow, ProductRow, PromoterRow } from "@/lib/analytics";
 import { Card, cx } from "./primitives";
 
-const th = "text-xs uppercase tracking-wide text-muted-foreground font-medium pb-2";
+const th = "font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground font-medium pb-2";
 
 /** Entry plans: units sold, people (entradas incluidas), presale, amount and limit status. */
 export function PlansTable({ rows, title = "Planes de la noche" }: { rows: PlanRow[]; title?: string }) {
@@ -13,7 +13,7 @@ export function PlansTable({ rows, title = "Planes de la noche" }: { rows: PlanR
     <Card className="p-5">
       <div className="flex items-baseline justify-between mb-4">
         <h2 className="font-semibold">{title}</h2>
-        <span className="text-sm text-ink-2 tabular">
+        <span className="text-sm text-ink-2 font-mono tabular">
           {people} {people === 1 ? "persona" : "personas"}
         </span>
       </div>
@@ -38,11 +38,11 @@ export function PlansTable({ rows, title = "Planes de la noche" }: { rows: PlanR
                 return (
                   <tr key={r.product_id}>
                     <td className="py-2.5 font-medium">{r.name}</td>
-                    <td className="py-2.5 text-right tabular">{r.units}</td>
-                    <td className="py-2.5 text-right tabular font-semibold">{r.people}</td>
-                    <td className="py-2.5 text-right tabular text-ink-2">{r.presaleUnits || "—"}</td>
-                    <td className="py-2.5 text-right tabular">{bs(r.amount)}</td>
-                    <td className={cx("py-2.5 text-right tabular", full ? "text-bad font-medium" : "text-ink-2")}>
+                    <td className="py-2.5 text-right font-mono tabular">{r.units}</td>
+                    <td className="py-2.5 text-right font-mono tabular font-semibold">{r.people}</td>
+                    <td className="py-2.5 text-right font-mono tabular text-ink-2">{r.presaleUnits || "—"}</td>
+                    <td className="py-2.5 text-right font-mono tabular">{bs(r.amount)}</td>
+                    <td className={cx("py-2.5 text-right font-mono tabular", full ? "text-bad font-medium" : "text-ink-2")}>
                       {r.limit == null ? "—" : full ? "Agotado" : `${r.units} de ${r.limit}`}
                     </td>
                   </tr>
@@ -71,15 +71,15 @@ export function TopProducts({ rows, limit = 8 }: { rows: ProductRow[]; limit?: n
             <li key={r.product_id} className="text-sm">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="truncate">
-                  <span className="text-muted-foreground tabular mr-2">{i + 1}.</span>
+                  <span className="text-muted-foreground font-mono tabular mr-2">{i + 1}.</span>
                   {r.name}
                 </span>
-                <span className="tabular shrink-0">
+                <span className="font-mono tabular shrink-0">
                   <span className="font-semibold">{r.qty}</span> <span className="text-muted-foreground">· {bs(r.amount)}</span>
                 </span>
               </div>
               <div className="mt-1.5 h-1.5 rounded-full bg-surface-2 overflow-hidden">
-                <div className="h-full rounded-full bg-primary" style={{ width: `${(r.qty / max) * 100}%` }} />
+                <div className="h-full rounded-full bg-foreground" style={{ width: `${(r.qty / max) * 100}%` }} />
               </div>
             </li>
           ))}
@@ -110,9 +110,9 @@ export function PromotersTable({ rows }: { rows: PromoterRow[] }) {
             {rows.map((r) => (
               <tr key={r.code}>
                 <td className="py-2.5 font-mono">{r.code}</td>
-                <td className="py-2.5 text-right tabular text-ink-2">{r.sales}</td>
-                <td className="py-2.5 text-right tabular font-semibold">{r.people}</td>
-                <td className="py-2.5 text-right tabular">{bs(r.amount)}</td>
+                <td className="py-2.5 text-right font-mono tabular text-ink-2">{r.sales}</td>
+                <td className="py-2.5 text-right font-mono tabular font-semibold">{r.people}</td>
+                <td className="py-2.5 text-right font-mono tabular">{bs(r.amount)}</td>
               </tr>
             ))}
           </tbody>
@@ -131,16 +131,16 @@ export function CostCard({ summary, products }: { summary: CostSummary; products
       <h2 className="font-semibold mb-4">Costos y margen</h2>
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas con costo</p>
-          <p className="text-lg font-semibold tabular">{bs(summary.costedRevenue)}</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Ventas con costo</p>
+          <p className="text-lg font-semibold font-mono tabular">{bs(summary.costedRevenue)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Costo</p>
-          <p className="text-lg font-semibold tabular">{bs(summary.cost)}</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Costo</p>
+          <p className="text-lg font-semibold font-mono tabular">{bs(summary.cost)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Margen</p>
-          <p className={cx("text-lg font-semibold tabular", summary.margin >= 0 ? "text-ok" : "text-bad")}>
+          <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">Margen</p>
+          <p className={cx("text-lg font-semibold font-mono tabular", summary.margin >= 0 ? "text-ok" : "text-bad")}>
             {bs(summary.margin)}
             {pct != null && <span className="text-sm text-ink-2 font-normal"> · {pct}%</span>}
           </p>
@@ -160,9 +160,9 @@ export function CostCard({ summary, products }: { summary: CostSummary; products
             {withCost.slice(0, 8).map((r) => (
               <tr key={r.product_id}>
                 <td className="py-2">{r.name}</td>
-                <td className="py-2 text-right tabular">{bs(r.amount)}</td>
-                <td className="py-2 text-right tabular text-ink-2">{bs(r.cost ?? 0)}</td>
-                <td className="py-2 text-right tabular font-medium">{bs(r.margin ?? 0)}</td>
+                <td className="py-2 text-right font-mono tabular">{bs(r.amount)}</td>
+                <td className="py-2 text-right font-mono tabular text-ink-2">{bs(r.cost ?? 0)}</td>
+                <td className="py-2 text-right font-mono tabular font-medium">{bs(r.margin ?? 0)}</td>
               </tr>
             ))}
           </tbody>

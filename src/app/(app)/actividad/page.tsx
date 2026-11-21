@@ -12,7 +12,7 @@ import { StaffFilter } from "@/components/StaffFilter";
 import { SaleDetail } from "@/components/SaleDetail";
 
 const KIND_STYLE: Record<ActivityKind, { icon: typeof ShoppingBag; cls: string }> = {
-  sale: { icon: ShoppingBag, cls: "text-primary bg-primary/10" },
+  sale: { icon: ShoppingBag, cls: "text-ink bg-secondary" },
   void: { icon: Ban, cls: "text-bad bg-bad/10" },
 };
 
@@ -101,7 +101,7 @@ export default function ActivityPage() {
             <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-surface-2/60">
-                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
+                <tr className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground">
                   <th className="text-left font-medium px-4 py-2.5 w-32">{multiDay ? "Fecha" : "Hora"}</th>
                   <th className="text-left font-medium px-4 py-2.5 w-40">Persona</th>
                   <th className="text-left font-medium px-4 py-2.5 w-44">Acción</th>
@@ -112,7 +112,7 @@ export default function ActivityPage() {
               <tbody className="divide-y divide-line">
                 {events.map((e) => (
                   <tr key={e.id} onClick={() => setSelected(e.sale)} className="cursor-pointer hover:bg-surface-2/60">
-                    <td className="px-4 py-3 tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(e.at) : time(e.at)}</td>
+                    <td className="px-4 py-3 font-mono tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(e.at) : time(e.at)}</td>
                     <td className="px-4 py-3 font-medium whitespace-nowrap">{e.actorName}</td>
                     <td className="px-4 py-3">
                       <KindTag kind={e.kind} />
@@ -120,7 +120,7 @@ export default function ActivityPage() {
                     <td className="px-4 py-3 text-ink-2 max-w-0 truncate" title={e.detail}>
                       {e.detail}
                     </td>
-                    <td className={cx("px-4 py-3 text-right tabular font-medium", e.kind === "void" && "text-bad")}>{bs(e.amount)}</td>
+                    <td className={cx("px-4 py-3 text-right font-mono tabular font-medium", e.kind === "void" && "text-bad")}>{bs(e.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -138,7 +138,7 @@ export default function ActivityPage() {
                         <p className="text-sm">
                           <span className="font-medium">{e.actorName}</span> <span className="text-ink-2">{ACTIVITY_LABEL[e.kind].toLowerCase()}</span>
                         </p>
-                        <span className="text-sm tabular font-medium shrink-0">{bs(e.amount)}</span>
+                        <span className="text-sm font-mono tabular font-medium shrink-0">{bs(e.amount)}</span>
                       </div>
                       <p className="text-xs text-muted-foreground truncate">
                         {multiDay ? dateTime(e.at) : time(e.at)} · {e.detail}
