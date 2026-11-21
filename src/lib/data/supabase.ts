@@ -12,7 +12,7 @@ type SaleRow = Omit<Sale, "items" | "payments" | "created_by_name" | "voided_by_
 
 const SALE_SELECT =
   "id, created_at, business_day, created_by, table_label, note, total, status, void_reason, voided_by, voided_at, " +
-  "sale_items(id, product_id, name, qty, unit_price, subtotal), " +
+  "sale_items(id, product_id, name, product_type, qty, unit_price, subtotal), " +
   "payments(id, sale_id, method, amount, reference, proof_path, proof_hash, status, reject_reason, verified_by, verified_at, created_at)";
 
 const num = (v: unknown) => Number(v ?? 0);
@@ -79,7 +79,7 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
     },
 
     async listProducts(includeInactive = false) {
-      let q = sb.from("products").select("*").order("category").order("name");
+      let q = sb.from("products").select("*").order("type").order("category").order("name");
       if (!includeInactive) q = q.eq("active", true);
       const rows = check(await q) as { price: unknown }[];
       return rows.map((r) => ({ ...(r as object), price: num(r.price) })) as never;

@@ -50,6 +50,9 @@ export function exportSalesCsv(sales: Sale[], label: string) {
   downloadCsv(`ventas_${label}.csv`, rows);
 }
 
-export function exportProductsCsv(rows: { name: string; qty: number; amount: number }[], label: string) {
-  downloadCsv(`productos_${label}.csv`, [["producto", "cantidad", "monto_bs"], ...rows.map((r) => [r.name, r.qty, r.amount.toFixed(2)])]);
+export function exportProductsCsv(rows: { name: string; type?: string; qty: number; amount: number }[], label: string) {
+  downloadCsv(`productos_${label}.csv`, [
+    ["tipo", "producto", "cantidad", "monto_bs"],
+    ...rows.map((r) => [r.type === "entrada" ? "entrada" : "barra", r.name, r.qty, r.amount.toFixed(2)]),
+  ]);
 }

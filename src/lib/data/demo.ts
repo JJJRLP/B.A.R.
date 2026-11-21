@@ -20,6 +20,11 @@ interface Store {
 
 const uuid = () => crypto.randomUUID();
 
+const SEED_ENTRIES: [string, string, number][] = [
+  ["Entrada General", "Entradas", 30],
+  ["Entrada VIP", "Entradas", 80],
+];
+
 const SEED_PRODUCTS: [string, string, number][] = [
   ["Cerveza Paceña 620ml", "Cervezas", 25],
   ["Cerveza Huari 620ml", "Cervezas", 28],
@@ -41,16 +46,41 @@ function seed(): Store {
       { id: "demo-admin", full_name: "Dueño (demo)", email: "admin@demo", role: "admin", active: true },
       { id: "demo-staff", full_name: "Barra (demo)", email: "barra@demo", role: "staff", active: true },
     ],
-    products: SEED_PRODUCTS.map(([name, category, price]) => ({ id: uuid(), name, category, price, active: true })),
+    products: [
+      ...SEED_ENTRIES.map(([name, category, price]) => ({ id: uuid(), name, type: "entrada" as const, category, price, active: true })),
+      ...SEED_PRODUCTS.map(([name, category, price]) => ({ id: uuid(), name, type: "consumo" as const, category, price, active: true })),
+    ],
     sales: [],
     proofs: {},
   };
 }
 
+/** Upgrade demo data saved by older versions of the app. */
+function migrate(s: Store): Store {
+  let changed = false;
+  for (const p of s.products)
+    if (!p.type) {
+      p.type = "consumo";
+      changed = true;
+    }
+  for (const sale of s.sales)
+    for (const i of sale.items)
+      if (!i.product_type) {
+        i.product_type = "consumo";
+        changed = true;
+      }
+  if (!s.products.some((p) => p.type === "entrada")) {
+    s.products.unshift(...SEED_ENTRIES.map(([name, category, price]) => ({ id: uuid(), name, type: "entrada" as const, category, price, active: true })));
+    changed = true;
+  }
+  if (changed) save(s);
+  return s;
+}
+
 function load(): Store {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as Store;
+    if (raw) return migrate(JSON.parse(raw) as Store);
   } catch {}
   const s = seed();
   save(s);
@@ -131,7 +161,7 @@ export function createDemoApi(): DataApi {
     async listProducts(includeInactive = false) {
       return load()
         .products.filter((p) => includeInactive || p.active)
-        .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
+        .sort((a, b) => (a.type === b.type ? 0 : a.type === "entrada" ? -1 : 1) || a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
     },
     async saveProduct(p) {
       requireAdmin();
@@ -161,7 +191,7 @@ export function createDemoApi(): DataApi {
       const items = input.items.map((i) => {
         const prod = s.products.find((p) => p.id === i.product_id && p.active);
         if (!prod) throw new Error("Producto no encontrado");
-        return { id: uuid(), product_id: prod.id, name: prod.name, qty: i.qty, unit_price: prod.price, subtotal: prod.price * i.qty };
+        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, qty: i.qty, unit_price: prod.price, subtotal: prod.price * i.qty };
       });
       let proof_path: string | null = null;
       if (input.payment.proof) {

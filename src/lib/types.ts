@@ -11,9 +11,18 @@ export interface Profile {
   active: boolean;
 }
 
+/** entrada = entrance fee (General, VIP…), consumo = drinks/food at the bar */
+export type ProductType = "entrada" | "consumo";
+
+export const TYPE_LABEL: Record<ProductType, string> = {
+  entrada: "Entradas",
+  consumo: "Barra",
+};
+
 export interface Product {
   id: string;
   name: string;
+  type: ProductType;
   category: string;
   price: number;
   active: boolean;
@@ -23,6 +32,7 @@ export interface SaleItem {
   id: string;
   product_id: string;
   name: string;
+  product_type: ProductType;
   qty: number;
   unit_price: number;
   subtotal: number;

@@ -27,11 +27,15 @@ create table if not exists public.profiles (
 create table if not exists public.products (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
+  type        text not null default 'consumo' check (type in ('entrada','consumo')),
   category    text not null default 'General',
   price       numeric(10,2) not null check (price >= 0),
   active      boolean not null default true,
   created_at  timestamptz not null default now()
 );
+-- 'entrada' = entrance fee (General, VIP…), 'consumo' = drinks/food at the bar.
+alter table public.products add column if not exists type text not null default 'consumo'
+  check (type in ('entrada','consumo'));
 
 create table if not exists public.sales (
   id            uuid primary key default gen_random_uuid(),
@@ -53,10 +57,12 @@ create table if not exists public.sale_items (
   sale_id     uuid not null references public.sales(id) on delete cascade,
   product_id  uuid not null references public.products(id),
   name        text not null,             -- product name at sale time
+  product_type text not null default 'consumo', -- product type at sale time
   qty         integer not null check (qty > 0),
   unit_price  numeric(10,2) not null,
   subtotal    numeric(10,2) not null
 );
+alter table public.sale_items add column if not exists product_type text not null default 'consumo';
 create index if not exists sale_items_sale_idx on public.sale_items (sale_id);
 
 create table if not exists public.payments (
@@ -137,8 +143,8 @@ begin
   for v_item in select * from jsonb_array_elements(payload->'items') loop
     select * into v_prod from products where id = (v_item->>'product_id')::uuid and active;
     if not found then raise exception 'product not found or inactive'; end if;
-    insert into sale_items (sale_id, product_id, name, qty, unit_price, subtotal)
-    values (v_sale_id, v_prod.id, v_prod.name, (v_item->>'qty')::int, v_prod.price,
+    insert into sale_items (sale_id, product_id, name, product_type, qty, unit_price, subtotal)
+    values (v_sale_id, v_prod.id, v_prod.name, v_prod.type, (v_item->>'qty')::int, v_prod.price,
             v_prod.price * (v_item->>'qty')::int);
     v_total := v_total + v_prod.price * (v_item->>'qty')::int;
   end loop;

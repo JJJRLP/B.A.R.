@@ -5,11 +5,12 @@ Built from the MVP PRD: Next.js + Tailwind on the front, Supabase (Postgres, Aut
 
 ## Features (MVP)
 
+- **Puerta / Barra**: the sale screen switches between entrance fees (General, VIP… with +/− counters) and bar products. One sale can include both; each device remembers its last mode.
 - **Nueva venta**: tap products, adjust quantities, choose the payment method (QR/transfer, cash, card). For QR, upload or paste (Ctrl+V) the WhatsApp screenshot and type the reference number.
 - **Automatic warnings**: amount ≠ total, and possible duplicate proof (same reference or same image).
 - **Pendientes** (admin): QR payments wait here until someone checks the bank app and marks them *Verificado* or *Rechazado* (with a reason).
 - **Ventas**: list with date, method and status filters; open a sale to see items and proof; admin can void a sale with a reason. Staff only see their own sales for the current business day.
-- **Cierre del día** (admin): totals by method, by product and **by staff member**, pending/rejected counts, a cash count with the difference, and CSV export.
+- **Cierre del día** (admin): door vs bar totals with the number of people who paid entry, totals by method, by product and **by staff member**, pending/rejected counts, a cash count with the difference, and CSV export.
 - **Actividad** (admin): an audit log of who registered, verified, rejected or voided each sale, for how much and when. Filter by date, person and action; export to CSV. Each sale's detail also shows its own history.
 - **Productos** and **Equipo** (admin): manage products/prices and staff roles.
 
@@ -27,7 +28,7 @@ Open http://localhost:3000. With no Supabase keys the app runs in **demo mode**:
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products.
+2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql` before entrance fees existed, run `supabase/migrations/002_entry_fees.sql`.
 3. Copy `.env.example` to `.env.local` and fill in **Project Settings → API**:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co

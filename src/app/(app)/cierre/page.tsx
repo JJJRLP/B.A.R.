@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Download, GlassWater, Ticket } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { addDays, bs, businessDay, longDay } from "@/lib/format";
 import { exportProductsCsv, exportSalesCsv } from "@/lib/csv";
-import type { PaymentMethod, Sale } from "@/lib/types";
+import type { PaymentMethod, ProductType, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { Button, Card, Input, Label, PageHeader, Spinner, cx } from "@/components/ui";
 
@@ -37,14 +37,17 @@ export default function ClosePage() {
         return [m, { verified: ps.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0), pending: ps.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0), count: ps.length }];
       }),
     ) as Record<PaymentMethod, { verified: number; pending: number; count: number }>;
-    const products = new Map<string, { name: string; qty: number; amount: number }>();
+    const products = new Map<string, { name: string; type: ProductType; qty: number; amount: number }>();
     for (const sale of active)
       for (const i of sale.items) {
-        const row = products.get(i.product_id) ?? { name: i.name, qty: 0, amount: 0 };
+        const row = products.get(i.product_id) ?? { name: i.name, type: i.product_type ?? "consumo", qty: 0, amount: 0 };
         row.qty += i.qty;
         row.amount += i.subtotal;
         products.set(i.product_id, row);
       }
+    const productRows = Array.from(products.values()).sort((a, b) => b.amount - a.amount);
+    const entryRows = productRows.filter((r) => r.type === "entrada");
+    const barRows = productRows.filter((r) => r.type === "consumo");
     const pending = payments.filter((p) => p.status === "pending");
     const rejected = payments.filter((p) => p.status === "rejected");
     type StaffRow = { name: string; count: number; total: number; cash: number; qr: number; card: number; pending: number; voided: number };
@@ -73,7 +76,12 @@ export default function ClosePage() {
       rejectedAmount: rejected.reduce((a, p) => a + p.amount, 0),
       voided: list.length - active.length,
       byMethod,
-      products: Array.from(products.values()).sort((a, b) => b.amount - a.amount),
+      products: productRows,
+      entryRows,
+      barRows,
+      people: entryRows.reduce((a, r) => a + r.qty, 0),
+      entryAmount: entryRows.reduce((a, r) => a + r.amount, 0),
+      barAmount: barRows.reduce((a, r) => a + r.amount, 0),
     };
   }, [sales]);
 
@@ -125,6 +133,40 @@ export default function ClosePage() {
             <Kpi label="Rechazado / anulado" value={bs(s.rejectedAmount)} hint={`${s.rejectedCount} rechazados · ${s.voided} anuladas`} tone={s.rejectedCount ? "bad" : undefined} />
           </div>
 
+          {/* Door vs bar */}
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-muted flex items-center gap-1.5">
+                    <Ticket size={14} className="text-accent" /> Puerta · Entradas
+                  </p>
+                  <p className="text-2xl font-semibold tabular mt-1">{bs(s.entryAmount)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-semibold tabular">{s.people}</p>
+                  <p className="text-xs text-muted">{s.people === 1 ? "persona" : "personas"}</p>
+                </div>
+              </div>
+              {s.entryRows.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {s.entryRows.map((r) => (
+                    <span key={r.name} className="rounded-md bg-surface-2 border border-line px-2.5 py-1 text-xs text-ink-2">
+                      {r.name}: <span className="text-ink tabular">{r.qty}</span> · <span className="tabular">{bs(r.amount)}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </Card>
+            <Card className="p-5">
+              <p className="text-xs uppercase tracking-wide text-muted flex items-center gap-1.5">
+                <GlassWater size={14} /> Barra · Consumo
+              </p>
+              <p className="text-2xl font-semibold tabular mt-1">{bs(s.barAmount)}</p>
+              {s.people > 0 && <p className="text-xs text-ink-2 mt-3">Consumo promedio por persona: <span className="text-ink tabular">{bs(s.barAmount / s.people)}</span></p>}
+            </Card>
+          </div>
+
           {/* By staff */}
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
@@ -169,7 +211,7 @@ export default function ClosePage() {
             )}
           </Card>
 
-          <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+          <div className="grid gap-5 xl:grid-cols-[1fr_1.2fr]">
             {/* By method */}
             <Card className="p-5">
               <h2 className="font-semibold mb-4">Por método de pago</h2>
@@ -236,19 +278,38 @@ export default function ClosePage() {
                       <th className="text-right font-medium pb-2">Monto</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-line">
-                    {s.products.map((p) => (
-                      <tr key={p.name}>
-                        <td className="py-2.5">{p.name}</td>
-                        <td className="py-2.5 text-right tabular text-ink-2">{p.qty}</td>
-                        <td className="py-2.5 text-right tabular">{bs(p.amount)}</td>
-                      </tr>
+                  {(
+                    [
+                      { label: "Entradas", rows: s.entryRows, amount: s.entryAmount },
+                      { label: "Barra", rows: s.barRows, amount: s.barAmount },
+                    ] as const
+                  )
+                    .filter((g) => g.rows.length > 0)
+                    .map((g) => (
+                      <tbody key={g.label} className="divide-y divide-line">
+                        <tr>
+                          <td colSpan={3} className="pt-4 pb-1.5 text-xs uppercase tracking-wide text-accent">
+                            {g.label}
+                          </td>
+                        </tr>
+                        {g.rows.map((p) => (
+                          <tr key={p.name}>
+                            <td className="py-2.5">{p.name}</td>
+                            <td className="py-2.5 text-right tabular text-ink-2">{p.qty}</td>
+                            <td className="py-2.5 text-right tabular">{bs(p.amount)}</td>
+                          </tr>
+                        ))}
+                        <tr className="text-ink-2">
+                          <td className="py-2 text-xs">Subtotal {g.label.toLowerCase()}</td>
+                          <td className="py-2 text-right tabular text-xs">{g.rows.reduce((a, p) => a + p.qty, 0)}</td>
+                          <td className="py-2 text-right tabular text-xs">{bs(g.amount)}</td>
+                        </tr>
+                      </tbody>
                     ))}
-                  </tbody>
                   <tfoot>
                     <tr className="border-t border-line font-medium">
                       <td className="pt-3">Total</td>
-                      <td className="pt-3 text-right tabular">{s.products.reduce((a, p) => a + p.qty, 0)}</td>
+                      <td className="pt-3 text-right tabular" />
                       <td className="pt-3 text-right tabular">{bs(s.sold)}</td>
                     </tr>
                   </tfoot>

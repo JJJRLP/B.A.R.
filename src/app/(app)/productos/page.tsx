@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Package, Pencil, Plus } from "lucide-react";
+import { GlassWater, Package, Pencil, Plus, Ticket } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { bs } from "@/lib/format";
-import type { Product } from "@/lib/types";
+import type { Product, ProductType } from "@/lib/types";
 import { Button, Card, Empty, Input, Label, Modal, PageHeader, Spinner, Toast, cx } from "@/components/ui";
 
 type Draft = Omit<Product, "id"> & { id?: string };
-const EMPTY: Draft = { name: "", category: "", price: 0, active: true };
+const EMPTY: Draft = { name: "", type: "consumo", category: "", price: 0, active: true };
+
+const SECTIONS: { type: ProductType; title: string; hint: string; icon: typeof Ticket }[] = [
+  { type: "entrada", title: "Entradas", hint: "Tipos de entrada que se cobran en puerta (General, VIP…).", icon: Ticket },
+  { type: "consumo", title: "Barra", hint: "Bebidas y comida.", icon: GlassWater },
+];
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -22,8 +27,21 @@ export default function ProductsPage() {
     load().catch((e) => setToast({ msg: e.message, kind: "bad" }));
   }, [load]);
 
-  const categories = useMemo(() => Array.from(new Set((products ?? []).map((p) => p.category))), [products]);
-  const grouped = useMemo(() => categories.map((c) => ({ c, items: (products ?? []).filter((p) => p.category === c) })), [categories, products]);
+  const categoriesOf = useCallback(
+    (type: ProductType) => Array.from(new Set((products ?? []).filter((p) => p.type === type).map((p) => p.category))),
+    [products],
+  );
+  const sections = useMemo(
+    () =>
+      SECTIONS.map((s) => ({
+        ...s,
+        groups: categoriesOf(s.type).map((c) => ({ c, items: (products ?? []).filter((p) => p.type === s.type && p.category === c) })),
+      })),
+    [products, categoriesOf],
+  );
+
+  const newDraft = (type: ProductType) =>
+    setDraft({ ...EMPTY, type, category: categoriesOf(type)[0] ?? (type === "entrada" ? "Entradas" : "") });
 
   const save = async () => {
     if (!draft) return;
@@ -31,7 +49,7 @@ export default function ProductsPage() {
     try {
       await getApi().saveProduct({ ...draft, name: draft.name.trim(), category: draft.category.trim() });
       setDraft(null);
-      setToast({ msg: "Producto guardado", kind: "ok" });
+      setToast({ msg: draft.type === "entrada" ? "Entrada guardada" : "Producto guardado", kind: "ok" });
       load();
     } catch (e) {
       setToast({ msg: e instanceof Error ? e.message : "Error", kind: "bad" });
@@ -45,54 +63,69 @@ export default function ProductsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Productos"
-        subtitle="Los productos inactivos no aparecen al vender, pero se conservan en el historial."
-        actions={
-          <Button variant="primary" onClick={() => setDraft({ ...EMPTY, category: categories[0] ?? "" })}>
-            <Plus size={16} /> Nuevo producto
-          </Button>
-        }
-      />
+      <PageHeader title="Productos y entradas" subtitle="Lo inactivo no aparece al vender, pero se conserva en el historial." />
 
       {!products ? (
         <div className="py-14 grid place-items-center">
           <Spinner />
         </div>
-      ) : products.length === 0 ? (
-        <Card>
-          <Empty icon={<Package size={28} />} title="Aún no hay productos" hint="Crea el primero para empezar a vender." />
-        </Card>
       ) : (
-        <div className="space-y-5">
-          {grouped.map(({ c, items }) => (
-            <section key={c}>
-              <h2 className="text-xs uppercase tracking-wide text-muted mb-2">{c}</h2>
-              <Card className="divide-y divide-line">
-                {items.map((p) => (
-                  <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
-                    <span className="flex-1 min-w-0 text-sm truncate">{p.name}</span>
-                    <span className="text-sm tabular w-24 text-right">{bs(p.price)}</span>
-                    <button
-                      onClick={() => toggle(p)}
-                      className={cx("relative h-5 w-9 rounded-full transition-colors shrink-0", p.active ? "bg-ok/70" : "bg-line")}
-                      aria-label={p.active ? "Desactivar" : "Activar"}
-                      title={p.active ? "Activo" : "Inactivo"}
-                    >
-                      <span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-ink transition-all", p.active ? "left-4.5" : "left-0.5")} />
-                    </button>
-                    <Button size="sm" variant="ghost" onClick={() => setDraft({ ...p })} aria-label="Editar">
-                      <Pencil size={15} />
-                    </Button>
+        <div className="space-y-8">
+          {sections.map((s) => (
+            <section key={s.type}>
+              <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className={cx("h-8 w-8 rounded-lg grid place-items-center", s.type === "entrada" ? "bg-accent/12 text-accent" : "bg-surface-2 text-ink-2")}>
+                    <s.icon size={17} />
+                  </span>
+                  <div>
+                    <h2 className="font-semibold leading-tight">{s.title}</h2>
+                    <p className="text-xs text-muted">{s.hint}</p>
                   </div>
-                ))}
-              </Card>
+                </div>
+                <Button size="sm" variant={s.type === "entrada" ? "primary" : "secondary"} onClick={() => newDraft(s.type)}>
+                  <Plus size={15} /> {s.type === "entrada" ? "Nuevo tipo de entrada" : "Nuevo producto"}
+                </Button>
+              </div>
+
+              {s.groups.length === 0 ? (
+                <Card>
+                  <Empty icon={s.type === "entrada" ? <Ticket size={26} /> : <Package size={26} />} title={s.type === "entrada" ? "Sin tipos de entrada" : "Sin productos"} />
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {s.groups.map(({ c, items }) => (
+                    <div key={c}>
+                      {(s.groups.length > 1 || s.type === "consumo") && <h3 className="text-xs uppercase tracking-wide text-muted mb-2">{c}</h3>}
+                      <Card className="divide-y divide-line">
+                        {items.map((p) => (
+                          <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
+                            <span className="flex-1 min-w-0 text-sm truncate">{p.name}</span>
+                            <span className="text-sm tabular w-24 text-right">{p.price === 0 ? "Gratis" : bs(p.price)}</span>
+                            <button
+                              onClick={() => toggle(p)}
+                              className={cx("relative h-5 w-9 rounded-full transition-colors shrink-0", p.active ? "bg-ok/70" : "bg-line")}
+                              aria-label={p.active ? "Desactivar" : "Activar"}
+                              title={p.active ? "Activo" : "Inactivo"}
+                            >
+                              <span className={cx("absolute top-0.5 h-4 w-4 rounded-full bg-ink transition-all", p.active ? "left-[18px]" : "left-0.5")} />
+                            </button>
+                            <Button size="sm" variant="ghost" onClick={() => setDraft({ ...p })} aria-label="Editar">
+                              <Pencil size={15} />
+                            </Button>
+                          </div>
+                        ))}
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           ))}
         </div>
       )}
 
-      <Modal open={!!draft} onClose={() => setDraft(null)} title={draft?.id ? "Editar producto" : "Nuevo producto"}>
+      <Modal open={!!draft} onClose={() => setDraft(null)} title={draft?.id ? "Editar" : draft?.type === "entrada" ? "Nuevo tipo de entrada" : "Nuevo producto"}>
         {draft && (
           <form
             className="space-y-4"
@@ -101,21 +134,40 @@ export default function ProductsPage() {
               save();
             }}
           >
+            <div>
+              <Label>Tipo</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {SECTIONS.map((s) => (
+                  <button
+                    key={s.type}
+                    type="button"
+                    onClick={() => setDraft({ ...draft, type: s.type, category: draft.type === s.type ? draft.category : categoriesOf(s.type)[0] ?? (s.type === "entrada" ? "Entradas" : "") })}
+                    className={cx(
+                      "h-11 rounded-lg border flex items-center justify-center gap-2 text-sm",
+                      draft.type === s.type ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                    )}
+                  >
+                    <s.icon size={16} className={draft.type === s.type ? "text-accent" : ""} />
+                    {s.type === "entrada" ? "Entrada" : "Barra"}
+                  </button>
+                ))}
+              </div>
+            </div>
             <label className="block">
               <Label>Nombre</Label>
-              <Input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+              <Input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder={draft.type === "entrada" ? "Ej. Entrada VIP" : "Ej. Cerveza 620ml"} />
             </label>
             <label className="block">
               <Label>Categoría</Label>
-              <Input list="cats" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder="Ej. Cervezas" />
+              <Input list="cats" value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })} placeholder={draft.type === "entrada" ? "Entradas" : "Ej. Cervezas"} />
               <datalist id="cats">
-                {categories.map((c) => (
+                {categoriesOf(draft.type).map((c) => (
                   <option key={c} value={c} />
                 ))}
               </datalist>
             </label>
             <label className="block">
-              <Label>Precio (Bs)</Label>
+              <Label>Precio (Bs){draft.type === "entrada" && " · 0 = gratis"}</Label>
               <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="tabular" />
             </label>
             <label className="flex items-center gap-2 text-sm">
