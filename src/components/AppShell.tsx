@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, ClipboardList, Clock, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
+import { BarChart3, ClipboardList, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getApi } from "@/lib/data";
 import { cx } from "./ui";
@@ -11,10 +10,9 @@ import { cx } from "./ui";
 const NAV = [
   { href: "/", label: "Nueva venta", short: "Vender", icon: PlusCircle, admin: false, mobile: true },
   { href: "/ventas", label: "Ventas", short: "Ventas", icon: Receipt, admin: false, mobile: true },
-  { href: "/pendientes", label: "Pendientes", short: "Pend.", icon: Clock, admin: false, mobile: true },
   { href: "/cierre", label: "Cierre del día", short: "Cierre", icon: ClipboardList, admin: true, mobile: true },
   { href: "/actividad", label: "Actividad", short: "Actividad", icon: History, admin: true, mobile: true },
-  { href: "/reportes", label: "Reportes", short: "Reportes", icon: BarChart3, admin: true, mobile: false },
+  { href: "/reportes", label: "Reportes", short: "Reportes", icon: BarChart3, admin: true, mobile: true },
   { href: "/productos", label: "Productos", short: "Prod.", icon: Package, admin: true, mobile: false },
   { href: "/equipo", label: "Equipo", short: "Equipo", icon: Users, admin: true, mobile: false },
 ];
@@ -25,25 +23,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, isAdmin } = useAuth();
   const items = NAV.filter((n) => isAdmin || !n.admin);
   const demo = getApi().mode === "demo";
-  const [pendingCount, setPendingCount] = useState(0);
-
-  // Refresh the pending badge whenever the admin moves between screens.
-  useEffect(() => {
-    getApi()
-      .listPending()
-      .then((s) => setPendingCount(s.reduce((a, x) => a + x.payments.length, 0)))
-      .catch(() => {});
-  }, [pathname]);
 
   const logout = async () => {
     await getApi().signOut();
     router.replace("/login");
   };
 
-  const badge = (href: string) =>
-    href === "/pendientes" && pendingCount > 0 ? (
-      <span className="ml-auto min-w-5 h-5 px-1.5 rounded-full bg-warn text-bg text-[11px] font-semibold grid place-items-center tabular">{pendingCount}</span>
-    ) : null;
 
   return (
     <div className="min-h-dvh md:flex">
@@ -72,7 +57,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 >
                   <n.icon size={18} className={active ? "text-accent" : ""} />
                   {n.label}
-                  {badge(n.href)}
                 </Link>
               </div>
             );
@@ -129,9 +113,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <n.icon size={20} />
                 {n.short}
-                {n.href === "/pendientes" && pendingCount > 0 && (
-                  <span className="absolute top-2 left-1/2 ml-2 min-w-4 h-4 px-1 rounded-full bg-warn text-bg text-[10px] font-semibold grid place-items-center tabular">{pendingCount}</span>
-                )}
               </Link>
             );
           })}

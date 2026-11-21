@@ -2,7 +2,7 @@ import type { PaymentMethod, Sale } from "./types";
 import { METHOD_LABEL } from "./types";
 import { businessDay } from "./format";
 
-export type ActivityKind = "sale" | "verified" | "rejected" | "void";
+export type ActivityKind = "sale" | "void";
 
 export interface ActivityEvent {
   id: string;
@@ -18,8 +18,6 @@ export interface ActivityEvent {
 
 export const ACTIVITY_LABEL: Record<ActivityKind, string> = {
   sale: "Registró venta",
-  verified: "Verificó pago",
-  rejected: "Rechazó pago",
   void: "Anuló venta",
 };
 
@@ -41,21 +39,6 @@ export function buildActivity(sales: Sale[], from: string, to: string, actorId?:
       detail: [items(s), s.customer_name ? `Titular ${s.customer_name}${s.customer_ci ? ` (CI ${s.customer_ci})` : ""}` : "", pay ? METHOD_LABEL[pay.method] : "", s.table_label ? `Mesa ${s.table_label}` : ""].filter(Boolean).join(" · "),
       sale: s,
     });
-    for (const p of s.payments) {
-      // cash/card are verified automatically on entry by the same person; only log manual checks
-      if (p.method !== "qr" || !p.verified_at || p.status === "pending") continue;
-      out.push({
-        id: `${p.id}:${p.status}`,
-        at: p.verified_at,
-        kind: p.status === "verified" ? "verified" : "rejected",
-        actorId: p.verified_by,
-        actorName: p.verified_by_name ?? "—",
-        amount: p.amount,
-        method: p.method,
-        detail: `Venta de ${s.created_by_name ?? "—"}${p.reference ? ` · Ref. ${p.reference}` : ""}${p.status === "rejected" && p.reject_reason ? ` · Motivo: ${p.reject_reason}` : ""}`,
-        sale: s,
-      });
-    }
     if (s.status === "void" && s.voided_at) {
       out.push({
         id: `${s.id}:void`,

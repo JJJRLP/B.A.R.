@@ -61,9 +61,9 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
       ) : (
         <ul className="space-y-3">
           {(results ?? []).map((r) => {
-            const ok = r.sale_status !== "void" && r.payment_status === "verified";
+            const ok = r.sale_status !== "void";
             return (
-              <li key={r.sale_id} className={cx("rounded-xl border p-4", r.sale_status === "void" ? "border-bad/40" : ok ? "border-ok/40" : "border-warn/40")}>
+              <li key={r.sale_id} className={cx("rounded-xl border p-4", ok ? "border-ok/40" : "border-bad/40")}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <p className={cx("font-semibold", hit(r.customer_name) && "text-accent")}>{r.customer_name ?? "Sin nombre"}</p>
@@ -72,7 +72,7 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
                     </p>
                   </div>
                   <div className="text-right">
-                    {r.sale_status === "void" ? <StatusBadge status="void" /> : r.payment_status && <StatusBadge status={r.payment_status} />}
+                    {r.sale_status === "void" && <StatusBadge status="void" />}
                     <p className="text-xs text-muted mt-1">
                       {time(r.created_at)} · {r.sold_by ?? "—"}
                     </p>

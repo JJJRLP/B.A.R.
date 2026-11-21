@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronLeft, ChevronRight, Download, GlassWater, Ticket } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, GlassWater, Ticket } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { addDays, bs, businessDay, longDay } from "@/lib/format";
 import { exportProductsCsv, exportSalesCsv } from "@/lib/csv";
@@ -60,9 +60,9 @@ export default function ClosePage() {
     const byMethod = Object.fromEntries(
       METHODS.map((m) => {
         const ps = payments.filter((p) => p.method === m);
-        return [m, { verified: ps.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0), pending: ps.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0), count: ps.length }];
+        return [m, { amount: ps.reduce((a, p) => a + p.amount, 0), count: ps.length }];
       }),
-    ) as Record<PaymentMethod, { verified: number; pending: number; count: number }>;
+    ) as Record<PaymentMethod, { amount: number; count: number }>;
     const products = new Map<string, { name: string; type: ProductType; qty: number; people: number; amount: number }>();
     for (const sale of active)
       for (const i of sale.items) {
@@ -75,20 +75,15 @@ export default function ClosePage() {
     const productRows = Array.from(products.values()).sort((a, b) => b.amount - a.amount);
     const entryRows = productRows.filter((r) => r.type === "entrada");
     const barRows = productRows.filter((r) => r.type === "consumo");
-    const pending = payments.filter((p) => p.status === "pending");
-    const rejected = payments.filter((p) => p.status === "rejected");
-    type StaffRow = { name: string; count: number; total: number; cash: number; qr: number; card: number; pending: number; voided: number };
+    type StaffRow = { name: string; count: number; total: number; cash: number; qr: number; card: number; voided: number };
     const staff = new Map<string, StaffRow>();
     for (const sale of list) {
-      const row = staff.get(sale.created_by) ?? { name: sale.created_by_name ?? "—", count: 0, total: 0, cash: 0, qr: 0, card: 0, pending: 0, voided: 0 };
+      const row = staff.get(sale.created_by) ?? { name: sale.created_by_name ?? "—", count: 0, total: 0, cash: 0, qr: 0, card: 0, voided: 0 };
       if (sale.status === "void") row.voided += 1;
       else {
         row.count += 1;
         row.total += sale.total;
-        for (const p of sale.payments) {
-          row[p.method] += p.amount;
-          if (p.status === "pending") row.pending += p.amount;
-        }
+        for (const p of sale.payments) row[p.method] += p.amount;
       }
       staff.set(sale.created_by, row);
     }
@@ -96,12 +91,8 @@ export default function ClosePage() {
       byStaff: Array.from(staff.values()).sort((a, b) => b.total - a.total),
       count: active.length,
       sold: active.reduce((a, x) => a + x.total, 0),
-      verified: payments.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0),
-      pendingCount: pending.length,
-      pendingAmount: pending.reduce((a, p) => a + p.amount, 0),
-      rejectedCount: rejected.length,
-      rejectedAmount: rejected.reduce((a, p) => a + p.amount, 0),
       voided: list.length - active.length,
+      voidedAmount: list.filter((x) => x.status === "void").reduce((a, x) => a + x.total, 0),
       byMethod,
       products: productRows,
       entryRows,
@@ -112,7 +103,7 @@ export default function ClosePage() {
     };
   }, [sales]);
 
-  const cashDiff = cashCount === "" ? null : Number(cashCount) - s.byMethod.cash.verified;
+  const cashDiff = cashCount === "" ? null : Number(cashCount) - s.byMethod.cash.amount;
 
   return (
     <div>
@@ -140,24 +131,12 @@ export default function ClosePage() {
         </div>
       ) : (
         <div className="space-y-5">
-          {s.pendingCount > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn/[0.07] px-4 py-3">
-              <p className="text-sm flex items-center gap-2">
-                <AlertTriangle size={16} className="text-warn" />
-                {s.pendingCount} {s.pendingCount === 1 ? "pago pendiente" : "pagos pendientes"} por {bs(s.pendingAmount)}. El cierre no está completo.
-              </p>
-              <Link href="/pendientes" className="text-sm text-warn hover:underline">
-                Revisar pendientes →
-              </Link>
-            </div>
-          )}
-
           {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Kpi label="Vendido" value={bs(s.sold)} hint={`${s.count} ${s.count === 1 ? "venta" : "ventas"}`} />
-            <Kpi label="Cobrado verificado" value={bs(s.verified)} tone="ok" />
-            <Kpi label="Pendiente" value={bs(s.pendingAmount)} hint={`${s.pendingCount} pagos`} tone={s.pendingCount ? "warn" : undefined} />
-            <Kpi label="Rechazado / anulado" value={bs(s.rejectedAmount)} hint={`${s.rejectedCount} rechazados · ${s.voided} anuladas`} tone={s.rejectedCount ? "bad" : undefined} />
+            <Kpi label="Efectivo" value={bs(s.byMethod.cash.amount)} hint={`${s.byMethod.cash.count} pagos`} />
+            <Kpi label="QR / Transferencia" value={bs(s.byMethod.qr.amount)} hint={`${s.byMethod.qr.count} pagos · tarjeta ${bs(s.byMethod.card.amount)}`} />
+            <Kpi label="Anulado" value={bs(s.voidedAmount)} hint={`${s.voided} ${s.voided === 1 ? "venta anulada" : "ventas anuladas"}`} tone={s.voided ? "bad" : undefined} />
           </div>
 
           {/* Door vs bar */}
@@ -218,7 +197,6 @@ export default function ClosePage() {
                       <th className="text-right font-medium pb-2">Efectivo</th>
                       <th className="text-right font-medium pb-2">QR</th>
                       <th className="text-right font-medium pb-2">Tarjeta</th>
-                      <th className="text-right font-medium pb-2">Pendiente</th>
                       <th className="text-right font-medium pb-2">Anuladas</th>
                       <th className="text-right font-medium pb-2">Total</th>
                     </tr>
@@ -231,7 +209,6 @@ export default function ClosePage() {
                         <td className="py-2.5 text-right tabular">{bs(r.cash)}</td>
                         <td className="py-2.5 text-right tabular">{bs(r.qr)}</td>
                         <td className="py-2.5 text-right tabular">{bs(r.card)}</td>
-                        <td className={cx("py-2.5 text-right tabular", r.pending ? "text-warn" : "text-muted")}>{bs(r.pending)}</td>
                         <td className={cx("py-2.5 text-right tabular", r.voided ? "text-bad" : "text-muted")}>{r.voided}</td>
                         <td className="py-2.5 text-right tabular font-semibold">{bs(r.total)}</td>
                       </tr>
@@ -251,8 +228,7 @@ export default function ClosePage() {
                   <tr className="text-xs uppercase tracking-wide text-muted">
                     <th className="text-left font-medium pb-2">Método</th>
                     <th className="text-right font-medium pb-2">Pagos</th>
-                    <th className="text-right font-medium pb-2">Verificado</th>
-                    <th className="text-right font-medium pb-2">Pendiente</th>
+                    <th className="text-right font-medium pb-2">Monto</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
@@ -260,8 +236,7 @@ export default function ClosePage() {
                     <tr key={m}>
                       <td className="py-2.5">{METHOD_LABEL[m]}</td>
                       <td className="py-2.5 text-right tabular text-ink-2">{s.byMethod[m].count}</td>
-                      <td className="py-2.5 text-right tabular">{bs(s.byMethod[m].verified)}</td>
-                      <td className={cx("py-2.5 text-right tabular", s.byMethod[m].pending ? "text-warn" : "text-muted")}>{bs(s.byMethod[m].pending)}</td>
+                      <td className="py-2.5 text-right tabular">{bs(s.byMethod[m].amount)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -272,7 +247,7 @@ export default function ClosePage() {
                 <div className="flex items-end gap-3">
                   <label className="flex-1">
                     <Label>Efectivo contado en caja</Label>
-                    <Input type="number" inputMode="decimal" step="0.01" value={cashCount} onChange={(e) => setCashCount(e.target.value)} placeholder={s.byMethod.cash.verified.toFixed(2)} className="tabular" />
+                    <Input type="number" inputMode="decimal" step="0.01" value={cashCount} onChange={(e) => setCashCount(e.target.value)} placeholder={s.byMethod.cash.amount.toFixed(2)} className="tabular" />
                   </label>
                   <div className="text-right pb-2 min-w-28">
                     <p className="text-xs text-muted">Diferencia</p>
@@ -281,7 +256,7 @@ export default function ClosePage() {
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-muted mt-2">Esperado según el sistema: {bs(s.byMethod.cash.verified)}</p>
+                <p className="text-xs text-muted mt-2">Esperado según el sistema: {bs(s.byMethod.cash.amount)}</p>
               </div>
             </Card>
 

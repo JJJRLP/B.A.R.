@@ -1,5 +1,5 @@
 import type { Sale } from "./types";
-import { METHOD_LABEL, STATUS_LABEL } from "./types";
+import { METHOD_LABEL } from "./types";
 
 const esc = (v: unknown) => {
   const s = String(v ?? "");
@@ -20,7 +20,7 @@ export function exportSalesCsv(sales: Sale[], label: string) {
   const rows: unknown[][] = [
     [
       "dia", "noche_evento", "preventa", "relacionador", "fecha_hora", "venta_id", "registrado_por", "titular", "ci_titular", "acompanantes", "personas", "mesa", "productos", "total_venta",
-      "metodo", "monto_pagado", "estado_pago", "referencia", "verificado_por", "verificado_en", "motivo_rechazo",
+      "metodo", "monto_pagado", "referencia",
       "estado_venta", "anulado_por", "anulado_en", "motivo_anulacion", "nota",
     ],
   ];
@@ -43,11 +43,7 @@ export function exportSalesCsv(sales: Sale[], label: string) {
         s.total.toFixed(2),
         METHOD_LABEL[p.method],
         p.amount.toFixed(2),
-        STATUS_LABEL[p.status],
         p.reference ?? "",
-        p.verified_by_name ?? "",
-        p.verified_at ?? "",
-        p.reject_reason ?? "",
         s.status === "void" ? "anulada" : "vigente",
         s.voided_by_name ?? "",
         s.voided_at ?? "",

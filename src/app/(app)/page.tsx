@@ -110,14 +110,11 @@ export default function NewSalePage() {
     });
   };
 
-  const onSaved = useCallback((amount: number, verified: boolean) => {
+  const onSaved = useCallback((amount: number) => {
     setCart({});
     setSheetOpen(false);
     refreshSold();
-    setToast({
-      msg: `${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada · ${verified ? "pago verificado" : "pago pendiente de verificación"}`,
-      kind: "ok",
-    });
+    setToast({ msg: `${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada`, kind: "ok" });
   }, [refreshSold, presaleDay]);
 
   const checkout = (
@@ -365,12 +362,10 @@ function Checkout({
   presaleDay: string;
   onAdd: (id: string, d: number) => void;
   onClear: () => void;
-  onSaved: (amount: number, verified: boolean) => void;
+  onSaved: (amount: number) => void;
   onError: (msg: string) => void;
 }) {
   const [method, setMethod] = useState<PaymentMethod>("qr");
-  // QR: the seller can confirm it in the bank app now, or leave it pending (proof image optional)
-  const [qrConfirmed, setQrConfirmed] = useState(false);
   const [promoterCode, setPromoterCode] = useState("");
   const barInPresale = !!presaleDay && lines.some((l) => l.product.type !== "entrada");
   const [amount, setAmount] = useState<string>("");
@@ -447,7 +442,6 @@ function Checkout({
     setCustomerCi("");
     setGuestsText("");
     setPromoterCode("");
-    setQrConfirmed(false);
     if (proof) URL.revokeObjectURL(proof.preview);
     setProof(null);
     setDups([]);
@@ -461,7 +455,6 @@ function Checkout({
     setSaving(true);
     try {
       const compressed = proof ? await compressImage(proof.file) : null;
-      const verified = method !== "qr" || qrConfirmed;
       await getApi().createSale({
         table_label: tableLabel,
         customer: hasEntries ? { name: customerName.trim(), ci: customerCi.trim() } : undefined,
@@ -474,12 +467,12 @@ function Checkout({
           method,
           amount: amountNum,
           reference: method === "qr" ? reference : "",
-          confirmed: method === "qr" ? qrConfirmed : true,
+          confirmed: true, // no verification step for now: checked in person
           proof: method === "qr" && proof && compressed ? { file: compressed, hash: proof.hash } : null,
         },
       });
       reset();
-      onSaved(amountNum, verified);
+      onSaved(amountNum);
     } catch (e) {
       onError(e instanceof Error ? e.message : "No se pudo guardar la venta");
     } finally {
@@ -609,31 +602,6 @@ function Checkout({
         {method === "qr" && (
           <div className="space-y-3">
             <div>
-              <Label>Estado del pago QR</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setQrConfirmed(false)}
-                  className={cx(
-                    "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                    !qrConfirmed ? "border-warn bg-warn/10 text-ink" : "border-line text-ink-2 hover:text-ink",
-                  )}
-                >
-                  <span className="font-medium block">Dejar pendiente</span>
-                  <span className="text-xs text-muted">Se revisa después</span>
-                </button>
-                <button
-                  onClick={() => setQrConfirmed(true)}
-                  className={cx(
-                    "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                    qrConfirmed ? "border-ok bg-ok/10 text-ink" : "border-line text-ink-2 hover:text-ink",
-                  )}
-                >
-                  <span className="font-medium block">Ya llegó al banco</span>
-                  <span className="text-xs text-muted">Queda verificado</span>
-                </button>
-              </div>
-            </div>
-            <div>
               <Label>Comprobante del cliente (opcional)</Label>
               {proof ? (
                 <div className="relative rounded-lg border border-line overflow-hidden bg-surface-2">
@@ -721,17 +689,10 @@ function Checkout({
             "Guardando…"
           ) : (
             <>
-              <Step n={3} invert /> {method === "qr" && !qrConfirmed ? "Guardar · pago pendiente" : `Guardar · cobrado ${bs(amountNum)}`}
+              <Step n={3} invert /> Guardar · cobrado {bs(amountNum)}
             </>
           )}
         </Button>
-        <p className="text-xs text-muted text-center -mt-2">
-          {method === "qr"
-            ? qrConfirmed
-              ? "Confirmaste el ingreso en el banco: queda verificado a tu nombre."
-              : "Queda en Pendientes hasta que tú o un administrador lo verifiquen."
-            : "Efectivo y tarjeta se registran como cobrados al guardar."}
-        </p>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ import { bs, dateTime } from "@/lib/format";
 import type { Payment, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
-import { Button, Input, Label, Modal, Spinner, StatusBadge } from "./ui";
+import { Button, Input, Label, Modal, Spinner } from "./ui";
 
 export function ProofImage({ path, className }: { path: string; className?: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -87,14 +87,6 @@ function History({ sale }: { sale: Sale }) {
   const steps: { at: string; who: string; what: string; tone: string }[] = [
     { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-accent" },
   ];
-  for (const p of sale.payments) {
-    if (p.method !== "qr" && p.verified_at) continue; // cash/card: confirmed on entry
-    if (p.status === "verified" && p.verified_at)
-      steps.push({ at: p.verified_at, who: p.verified_by_name ?? "—", what: `verificó el pago de ${bs(p.amount)}`, tone: "bg-ok" });
-    if (p.status === "rejected" && p.verified_at)
-      steps.push({ at: p.verified_at, who: p.verified_by_name ?? "—", what: `rechazó el pago${p.reject_reason ? `: “${p.reject_reason}”` : ""}`, tone: "bg-bad" });
-    if (p.status === "pending") steps.push({ at: "", who: "", what: "Pago pendiente de verificación", tone: "bg-warn" });
-  }
   if (sale.status === "void")
     steps.push({ at: sale.voided_at ?? "", who: sale.voided_by_name ?? "—", what: `anuló la venta${sale.void_reason ? `: “${sale.void_reason}”` : ""}`, tone: "bg-bad" });
 
@@ -118,7 +110,7 @@ function History({ sale }: { sale: Sale }) {
 }
 
 export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; onClose: () => void; onChanged: () => void }) {
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin } = useAuth();
   const [voiding, setVoiding] = useState(false);
   const [reason, setReason] = useState("");
   useEffect(() => {
@@ -197,7 +189,6 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
                   <p className="text-sm">{METHOD_LABEL[p.method]}</p>
                   <p className="text-lg font-semibold tabular">{bs(p.amount)}</p>
                 </div>
-                <StatusBadge status={p.status} />
               </div>
               {p.reference && <p className="text-sm text-ink-2">Referencia: <span className="text-ink font-mono">{p.reference}</span></p>}
               {p.proof_path ? (
@@ -206,15 +197,6 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
                 </div>
               ) : (
                 p.method === "qr" && <p className="text-sm text-muted">Sin comprobante adjunto.</p>
-              )}
-              {(isAdmin || sale.created_by === profile?.id) && p.status === "pending" && sale.status !== "void" && (
-                <VerifyActions
-                  payment={p}
-                  onDone={() => {
-                    onChanged();
-                    onClose();
-                  }}
-                />
               )}
             </div>
           ))}

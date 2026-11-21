@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Ban, CheckCircle2, Download, History, ShoppingBag, XCircle } from "lucide-react";
+import { Ban, Download, History, ShoppingBag } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { addDays, bs, businessDay, dateTime, longDay, time } from "@/lib/format";
 import { ACTIVITY_LABEL, buildActivity, type ActivityEvent, type ActivityKind } from "@/lib/activity";
@@ -13,8 +13,6 @@ import { SaleDetail } from "@/components/SaleDetail";
 
 const KIND_STYLE: Record<ActivityKind, { icon: typeof ShoppingBag; cls: string }> = {
   sale: { icon: ShoppingBag, cls: "text-accent bg-accent/10" },
-  verified: { icon: CheckCircle2, cls: "text-ok bg-ok/10" },
-  rejected: { icon: XCircle, cls: "text-bad bg-bad/10" },
   void: { icon: Ban, cls: "text-bad bg-bad/10" },
 };
 
@@ -57,7 +55,7 @@ export default function ActivityPage() {
     <div>
       <PageHeader
         title="Registro de actividad"
-        subtitle="Quién hizo qué, por cuánto y cuándo. Nada se borra: cada verificación y anulación queda registrada."
+        subtitle="Quién hizo qué, por cuánto y cuándo. Nada se borra: cada venta y anulación queda registrada."
         actions={
           events.length > 0 && (
             <Button size="sm" onClick={exportCsv}>
@@ -122,7 +120,7 @@ export default function ActivityPage() {
                     <td className="px-4 py-3 text-ink-2 max-w-0 truncate" title={e.detail}>
                       {e.detail}
                     </td>
-                    <td className={cx("px-4 py-3 text-right tabular font-medium", e.kind !== "sale" && e.kind !== "verified" && "text-bad")}>{bs(e.amount)}</td>
+                    <td className={cx("px-4 py-3 text-right tabular font-medium", e.kind === "void" && "text-bad")}>{bs(e.amount)}</td>
                   </tr>
                 ))}
               </tbody>

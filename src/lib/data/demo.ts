@@ -240,7 +240,7 @@ export function createDemoApi(): DataApi {
         proof_path = `demo/${uuid()}.jpg`;
         s.proofs[proof_path] = await blobToDataUrl(small);
       }
-      const confirmed = input.payment.method !== "qr" || !!input.payment.confirmed;
+      const confirmed = true; // no verification step for now: checked in person
       const payment: Payment = {
         id: uuid(),
         sale_id: saleId,

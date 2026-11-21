@@ -6,7 +6,7 @@ import { getApi } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { bs, businessDay, dateTime, time, longDay } from "@/lib/format";
 import { exportSalesCsv } from "@/lib/csv";
-import type { PaymentMethod, PaymentStatus, Sale } from "@/lib/types";
+import type { PaymentMethod, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { Button, Card, Empty, Input, Label, PageHeader, Select, Spinner, StatusBadge, cx } from "@/components/ui";
 import { SaleDetail } from "@/components/SaleDetail";
@@ -18,7 +18,6 @@ export default function SalesPage() {
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
   const [method, setMethod] = useState<PaymentMethod | "">("");
-  const [status, setStatus] = useState<PaymentStatus | "">("");
   const [staff, setStaff] = useState("");
   const [search, setSearch] = useState("");
   const [searchDebounced, setSearchDebounced] = useState("");
@@ -33,12 +32,12 @@ export default function SalesPage() {
   const load = useCallback(async () => {
     setError("");
     try {
-      setSales(await getApi().listSales({ from, to, method, status, staff, search: searchDebounced }));
+      setSales(await getApi().listSales({ from, to, method, staff, search: searchDebounced }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
       setSales([]);
     }
-  }, [from, to, method, status, staff, searchDebounced]);
+  }, [from, to, method, staff, searchDebounced]);
 
   useEffect(() => {
     load();
@@ -90,15 +89,6 @@ export default function SalesPage() {
               <option value="card">Tarjeta</option>
             </Select>
           </label>
-          <label>
-            <Label>Estado</Label>
-            <Select value={status} onChange={(e) => setStatus(e.target.value as PaymentStatus | "")} className="w-full">
-              <option value="">Todos</option>
-              <option value="pending">Pendiente</option>
-              <option value="verified">Verificado</option>
-              <option value="rejected">Rechazado</option>
-            </Select>
-          </label>
         </div>
       )}
 
@@ -132,8 +122,7 @@ export default function SalesPage() {
                   <th className="text-left font-medium px-4 py-2.5">Productos</th>
                   <th className="text-left font-medium px-4 py-2.5 w-32">Método</th>
                   <th className="text-right font-medium px-4 py-2.5 w-28">Monto</th>
-                  <th className="text-left font-medium px-4 py-2.5 w-28">Estado</th>
-                  {isAdmin && <th className="text-left font-medium px-4 py-2.5 w-40">Verificó / anuló</th>}
+                  {isAdmin && <th className="text-left font-medium px-4 py-2.5 w-40">Anulada por</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -142,7 +131,7 @@ export default function SalesPage() {
                   const checker =
                     s.status === "void"
                       ? s.voided_by_name && { who: s.voided_by_name, at: s.voided_at }
-                      : p?.method === "qr" && p.verified_at && { who: p.verified_by_name ?? "—", at: p.verified_at };
+                      : null;
                   return (
                     <tr key={s.id} onClick={() => setSelected(s)} className={cx("cursor-pointer hover:bg-surface-2/60", s.status === "void" && "text-muted")}>
                       <td className="px-4 py-3 tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(s.created_at) : time(s.created_at)}</td>
@@ -168,7 +157,6 @@ export default function SalesPage() {
                         </span>
                       </td>
                       <td className={cx("px-4 py-3 text-right tabular font-medium", s.status === "void" && "line-through")}>{bs(s.total)}</td>
-                      <td className="px-4 py-3">{s.status === "void" ? <StatusBadge status="void" /> : p && <StatusBadge status={p.status} />}</td>
                       {isAdmin && (
                         <td className="px-4 py-3 text-xs">
                           {checker ? (
@@ -177,7 +165,7 @@ export default function SalesPage() {
                               {checker.at && <p className="text-muted tabular">{dateTime(checker.at)}</p>}
                             </>
                           ) : (
-                            <span className="text-muted">{p?.method === "qr" ? "—" : "Al registrar"}</span>
+                            <span className="text-muted">—</span>
                           )}
                         </td>
                       )}
@@ -206,7 +194,7 @@ export default function SalesPage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-sm font-medium tabular">{bs(s.total)}</p>
-                        {s.status === "void" ? <StatusBadge status="void" /> : p && <StatusBadge status={p.status} />}
+                        {s.status === "void" && <StatusBadge status="void" />}
                       </div>
                     </button>
                   </li>
