@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Banknote, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
+import { AlertTriangle, Banknote, CalendarDays, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
 import { getApi } from "@/lib/data";
-import { bs, dateTime, effectivePrice, isFreeNow } from "@/lib/format";
+import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
 import { Button, Empty, Input, Label, Modal, Spinner, Toast, cx } from "@/components/ui";
@@ -33,16 +33,23 @@ export default function NewSalePage() {
       .catch((e) => setToast({ msg: e.message, kind: "bad" }));
   }, []);
 
-  // Entries sold tonight (all devices) for the per-night limits, refreshed every 30 s.
+  // Preventa: entries sold now for a later night ("" = sale at the door for tonight)
+  const [presaleDay, setPresaleDay] = useState("");
+  const priceOf = useCallback(
+    (p: Product) => (presaleDay && p.type === "entrada" ? p.presale_price ?? p.price : effectivePrice(p)),
+    [presaleDay],
+  );
+
+  // Entries sold for the night being sold (all devices) for the per-night limits, refreshed every 30 s.
   // The tick also re-renders so a "free until 23:00" price switches on time.
   const [sold, setSold] = useState<Record<string, number>>({});
   const [, setTick] = useState(0);
   const refreshSold = useCallback(() => {
     getApi()
-      .entryCounts()
+      .entryCounts(presaleDay || undefined)
       .then(setSold)
       .catch(() => {});
-  }, []);
+  }, [presaleDay]);
   useEffect(() => {
     refreshSold();
     const t = setInterval(() => {
@@ -63,6 +70,7 @@ export default function NewSalePage() {
   }, []);
   const setMode = (m: ProductType) => {
     setModeState(m);
+    if (m === "consumo") setPresaleDay(""); // presale is for entries only
     setCategory("Todas");
     setQuery("");
     try {
@@ -85,7 +93,7 @@ export default function NewSalePage() {
         .filter((l): l is { product: Product; qty: number } => !!l.product && l.qty > 0),
     [cart, products],
   );
-  const total = lines.reduce((a, l) => a + effectivePrice(l.product) * l.qty, 0);
+  const total = lines.reduce((a, l) => a + priceOf(l.product) * l.qty, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
   const add = (id: string, d = 1) => {
@@ -102,20 +110,22 @@ export default function NewSalePage() {
     });
   };
 
-  const onSaved = useCallback((amount: number, method: PaymentMethod) => {
+  const onSaved = useCallback((amount: number, verified: boolean) => {
     setCart({});
     setSheetOpen(false);
     refreshSold();
     setToast({
-      msg: method === "qr" ? `Venta de ${bs(amount)} guardada · pago pendiente de verificación` : `Venta de ${bs(amount)} guardada y cobrada`,
+      msg: `${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada · ${verified ? "pago verificado" : "pago pendiente de verificación"}`,
       kind: "ok",
     });
-  }, [refreshSold]);
+  }, [refreshSold, presaleDay]);
 
   const checkout = (
     <Checkout
       lines={lines}
       total={total}
+      priceOf={priceOf}
+      presaleDay={presaleDay}
       onAdd={add}
       onClear={() => setCart({})}
       onSaved={onSaved}
@@ -169,6 +179,33 @@ export default function NewSalePage() {
           })}
         </div>
 
+        {mode === "entrada" && (
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-surface border border-line">
+              <button
+                onClick={() => setPresaleDay("")}
+                className={cx("h-9 px-3 rounded-md text-sm", !presaleDay ? "bg-surface-2 text-ink" : "text-ink-2 hover:text-ink")}
+              >
+                En puerta (hoy)
+              </button>
+              <button
+                onClick={() => setPresaleDay(presaleDay || addDays(businessDay(), 1))}
+                className={cx("h-9 px-3 rounded-md text-sm flex items-center gap-1.5", presaleDay ? "bg-surface-2 text-ink" : "text-ink-2 hover:text-ink")}
+              >
+                <CalendarDays size={15} /> Preventa
+              </button>
+            </div>
+            {presaleDay && (
+              <label className="flex items-center gap-2 text-sm text-ink-2">
+                para la noche del
+                <span className="w-40">
+                  <Input type="date" value={presaleDay} min={businessDay()} onChange={(e) => e.target.value && setPresaleDay(e.target.value)} className="h-9" />
+                </span>
+              </label>
+            )}
+          </div>
+        )}
+
         {mode === "consumo" && (
           <>
             <div className="relative mb-3">
@@ -206,8 +243,8 @@ export default function NewSalePage() {
           <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3 max-w-2xl 2xl:max-w-none">
             {shown.map((p) => {
               const qty = cart[p.id] ?? 0;
-              const price = effectivePrice(p);
-              const freeNow = p.price > 0 && isFreeNow(p.free_until);
+              const price = priceOf(p);
+              const freeNow = !presaleDay && p.price > 0 && isFreeNow(p.free_until);
               const left = remaining(p);
               const soldOut = left <= 0 && qty === 0;
               return (
@@ -225,10 +262,11 @@ export default function NewSalePage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
                       {p.name}
-                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted">{p.people_per_unit} personas</span>}
+                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted">incluye {p.people_per_unit} entradas</span>}
                     </p>
                     <p className="text-sm tabular flex flex-wrap items-center gap-x-2">
                       {price === 0 ? <span className="text-ok font-medium">Gratis</span> : <span className="text-ink-2">{bs(price)}</span>}
+                      {presaleDay && p.presale_price != null && p.presale_price !== p.price && <span className="text-xs text-muted line-through">{bs(p.price)}</span>}
                       {freeNow && <span className="text-xs text-muted">hasta las {p.free_until}, luego {bs(p.price)}</span>}
                     </p>
                     {p.max_per_night && (
@@ -314,6 +352,8 @@ export default function NewSalePage() {
 function Checkout({
   lines,
   total,
+  priceOf,
+  presaleDay,
   onAdd,
   onClear,
   onSaved,
@@ -321,12 +361,18 @@ function Checkout({
 }: {
   lines: { product: Product; qty: number }[];
   total: number;
+  priceOf: (p: Product) => number;
+  presaleDay: string;
   onAdd: (id: string, d: number) => void;
   onClear: () => void;
-  onSaved: (amount: number, method: PaymentMethod) => void;
+  onSaved: (amount: number, verified: boolean) => void;
   onError: (msg: string) => void;
 }) {
   const [method, setMethod] = useState<PaymentMethod>("qr");
+  // QR: the seller can confirm it in the bank app now, or leave it pending (proof image optional)
+  const [qrConfirmed, setQrConfirmed] = useState(false);
+  const [promoterCode, setPromoterCode] = useState("");
+  const barInPresale = !!presaleDay && lines.some((l) => l.product.type !== "entrada");
   const [amount, setAmount] = useState<string>("");
   const [reference, setReference] = useState("");
   const [tableLabel, setTableLabel] = useState("");
@@ -400,6 +446,8 @@ function Checkout({
     setCustomerName("");
     setCustomerCi("");
     setGuestsText("");
+    setPromoterCode("");
+    setQrConfirmed(false);
     if (proof) URL.revokeObjectURL(proof.preview);
     setProof(null);
     setDups([]);
@@ -409,24 +457,29 @@ function Checkout({
     if (!lines.length) return;
     if (!(amountNum >= 0)) return onError("Monto inválido");
     if (hasEntries && (!customerName.trim() || !customerCi.trim())) return onError("Ingresa nombre completo y CI del titular");
+    if (barInPresale) return onError("La preventa solo puede incluir entradas: quita los productos de barra");
     setSaving(true);
     try {
       const compressed = proof ? await compressImage(proof.file) : null;
+      const verified = method !== "qr" || qrConfirmed;
       await getApi().createSale({
         table_label: tableLabel,
         customer: hasEntries ? { name: customerName.trim(), ci: customerCi.trim() } : undefined,
         guests: hasEntries ? guests : [],
+        promoter_code: hasEntries ? promoterCode : "",
+        presale: presaleDay ? { event_day: presaleDay } : null,
         note,
         items: lines.map((l) => ({ product_id: l.product.id, qty: l.qty })),
         payment: {
           method,
           amount: amountNum,
           reference: method === "qr" ? reference : "",
+          confirmed: method === "qr" ? qrConfirmed : true,
           proof: method === "qr" && proof && compressed ? { file: compressed, hash: proof.hash } : null,
         },
       });
       reset();
-      onSaved(amountNum, method);
+      onSaved(amountNum, verified);
     } catch (e) {
       onError(e instanceof Error ? e.message : "No se pudo guardar la venta");
     } finally {
@@ -457,7 +510,7 @@ function Checkout({
                 {product.type === "entrada" && <Ticket size={13} className="text-accent shrink-0" />}
                 {product.name}
               </p>
-              <p className="text-xs text-muted tabular">{effectivePrice(product) === 0 ? "Gratis" : bs(effectivePrice(product))}</p>
+              <p className="text-xs text-muted tabular">{priceOf(product) === 0 ? "Gratis" : bs(priceOf(product))}</p>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => onAdd(product.id, -1)} className="h-7 w-7 rounded-md border border-line grid place-items-center text-ink-2 hover:text-ink" aria-label="Quitar uno">
@@ -468,7 +521,7 @@ function Checkout({
                 <Plus size={14} />
               </button>
             </div>
-            <span className="w-20 text-right text-sm tabular">{bs(effectivePrice(product) * qty)}</span>
+            <span className="w-20 text-right text-sm tabular">{bs(priceOf(product) * qty)}</span>
           </li>
         ))}
       </ul>
@@ -476,6 +529,16 @@ function Checkout({
         <span className="text-sm text-ink-2">Total</span>
         <span className="text-2xl font-semibold tabular">{bs(total)}</span>
       </div>
+
+      {presaleDay && (
+        <div className={cx("mx-5 mt-4 rounded-lg border p-3 text-sm flex gap-2", barInPresale ? "border-bad/40 bg-bad/[0.07]" : "border-accent/40 bg-accent/[0.07]")}>
+          <CalendarDays size={16} className={cx("shrink-0 mt-0.5", barInPresale ? "text-bad" : "text-accent")} />
+          <span>
+            Preventa para la noche del <span className="first-letter:uppercase inline-block font-medium">{longDay(presaleDay)}</span>.
+            {barInPresale && " La preventa solo puede incluir entradas: quita los productos de barra."}
+          </span>
+        </div>
+      )}
 
       {/* Buyer of the entries */}
       {hasEntries && (
@@ -513,6 +576,10 @@ function Checkout({
               </span>
             </label>
           )}
+          <label className="block">
+            <Label>Código de relacionador (opcional)</Label>
+            <Input value={promoterCode} onChange={(e) => setPromoterCode(e.target.value.toUpperCase())} placeholder="Ej. JUAN10" autoComplete="off" className="uppercase" />
+          </label>
         </div>
       )}
 
@@ -542,7 +609,32 @@ function Checkout({
         {method === "qr" && (
           <div className="space-y-3">
             <div>
-              <Label>Comprobante del cliente</Label>
+              <Label>Estado del pago QR</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setQrConfirmed(false)}
+                  className={cx(
+                    "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                    !qrConfirmed ? "border-warn bg-warn/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                  )}
+                >
+                  <span className="font-medium block">Dejar pendiente</span>
+                  <span className="text-xs text-muted">Se revisa después</span>
+                </button>
+                <button
+                  onClick={() => setQrConfirmed(true)}
+                  className={cx(
+                    "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
+                    qrConfirmed ? "border-ok bg-ok/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                  )}
+                >
+                  <span className="font-medium block">Ya llegó al banco</span>
+                  <span className="text-xs text-muted">Queda verificado</span>
+                </button>
+              </div>
+            </div>
+            <div>
+              <Label>Comprobante del cliente (opcional)</Label>
               {proof ? (
                 <div className="relative rounded-lg border border-line overflow-hidden bg-surface-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -629,15 +721,15 @@ function Checkout({
             "Guardando…"
           ) : (
             <>
-              <Step n={3} invert /> {method === "qr" ? "Guardar venta" : `Guardar · cobrado ${bs(amountNum)}`}
+              <Step n={3} invert /> {method === "qr" && !qrConfirmed ? "Guardar · pago pendiente" : `Guardar · cobrado ${bs(amountNum)}`}
             </>
           )}
         </Button>
         <p className="text-xs text-muted text-center -mt-2">
           {method === "qr"
-            ? proof
-              ? "El pago quedará pendiente hasta que el administrador lo verifique en el banco."
-              : "Sin comprobante el pago será difícil de verificar. Adjunta la captura si la tienes."
+            ? qrConfirmed
+              ? "Confirmaste el ingreso en el banco: queda verificado a tu nombre."
+              : "Queda en Pendientes hasta que tú o un administrador lo verifiquen."
             : "Efectivo y tarjeta se registran como cobrados al guardar."}
         </p>
       </div>

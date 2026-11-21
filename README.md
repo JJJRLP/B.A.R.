@@ -11,7 +11,11 @@ Built from the MVP PRD: Next.js + Tailwind on the front, Supabase (Postgres, Aut
 - **Verificar reserva** (door screen): search tonight's entry sales by buyer name, CI or any guest name, from any device, and see what was paid, how many people it covers and whether the payment is verified.
 - **Nueva venta**: tap products, adjust quantities, choose the payment method (QR/transfer, cash, card). For QR, upload or paste (Ctrl+V) the WhatsApp screenshot and type the reference number.
 - **Automatic warnings**: amount ≠ total, and possible duplicate proof (same reference or same image).
-- **Pendientes** (admin): QR payments wait here until someone checks the bank app and marks them *Verificado* or *Rechazado* (with a reason).
+- **QR payments**: the seller marks each QR as *Ya llegó al banco* (verified) or *Dejar pendiente*; the screenshot is optional. **Pendientes** is open to staff (their own sales of the night) and admins (all).
+- **Preventa**: entries and tables can be sold ahead for a future night, at an optional presale price; they count toward that night's limits, people and door lookup.
+- **Código de relacionador**: optional promoter code on entry sales, with a per-promoter report (sales, people, amount).
+- **Costs**: each product can have a unit cost; the daily close shows cost and margin.
+- **Reportes** (admin): people per night per plan, top plans and bar products, promoters and margins over a date range.
 - **Ventas**: list with date, method and status filters; open a sale to see items and proof; admin can void a sale with a reason. Staff only see their own sales for the current business day.
 - **Cierre del día** (admin): door vs bar totals with the number of people who paid entry, totals by method, by product and **by staff member**, pending/rejected counts, a cash count with the difference, and CSV export.
 - **Actividad** (admin): an audit log of who registered, verified, rejected or voided each sale, for how much and when. Filter by date, person and action; export to CSV. Each sale's detail also shows its own history.
@@ -31,7 +35,7 @@ Open http://localhost:3000. With no Supabase keys the app runs in **demo mode**:
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql`, run the files in `supabase/migrations/` that came after it, in order (`002_entry_fees.sql`, `003_entry_setup.sql`, `004_buyer_and_guests.sql`).
+2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql`, run the files in `supabase/migrations/` that came after it, in order (`002_entry_fees.sql`, `003` … `008`).
 3. Copy `.env.example` to `.env.local` and fill in **Project Settings → API**:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co

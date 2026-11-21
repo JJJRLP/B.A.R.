@@ -118,7 +118,7 @@ function History({ sale }: { sale: Sale }) {
 }
 
 export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; onClose: () => void; onChanged: () => void }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, profile } = useAuth();
   const [voiding, setVoiding] = useState(false);
   const [reason, setReason] = useState("");
   useEffect(() => {
@@ -144,7 +144,13 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-2">
             <span>Por: <span className="text-ink">{sale.created_by_name ?? "—"}</span></span>
             {sale.table_label && <span>Mesa: <span className="text-ink">{sale.table_label}</span></span>}
+            {sale.promoter_code && <span>Relacionador: <span className="text-ink font-mono">{sale.promoter_code}</span></span>}
           </div>
+          {sale.is_presale && sale.event_day && (
+            <p className="text-sm rounded-lg border border-accent/40 bg-accent/[0.07] px-3 py-2">
+              Preventa para la noche del <span className="font-medium">{sale.event_day}</span>
+            </p>
+          )}
           {(sale.customer_name || sale.customer_ci) && (
             <div className="rounded-lg border border-line bg-surface-2/40 p-3 text-sm">
               <p className="text-xs uppercase tracking-wide text-muted mb-1">Titular</p>
@@ -201,7 +207,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
               ) : (
                 p.method === "qr" && <p className="text-sm text-muted">Sin comprobante adjunto.</p>
               )}
-              {isAdmin && p.status === "pending" && sale.status !== "void" && (
+              {(isAdmin || sale.created_by === profile?.id) && p.status === "pending" && sale.status !== "void" && (
                 <VerifyActions
                   payment={p}
                   onDone={() => {

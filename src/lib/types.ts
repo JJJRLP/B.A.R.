@@ -32,6 +32,10 @@ export interface Product {
   free_until?: string | null;
   /** entries only: people let in per unit (1 = single entry, 6 = table for 6) */
   people_per_unit?: number;
+  /** cost per unit, for the margin in the daily review (null = not set) */
+  cost?: number | null;
+  /** entries only: presale price (null = same as the normal price) */
+  presale_price?: number | null;
 }
 
 export interface SaleItem {
@@ -43,6 +47,7 @@ export interface SaleItem {
   qty: number;
   unit_price: number;
   subtotal: number;
+  unit_cost?: number | null;
 }
 
 export interface Payment {
@@ -79,6 +84,11 @@ export interface Sale {
   customer_name?: string | null;
   customer_ci?: string | null;
   guests?: Guest[];
+  /** the night the entries are for (a presale is sold before it) */
+  event_day?: string;
+  is_presale?: boolean;
+  /** código de relacionador */
+  promoter_code?: string | null;
   items: SaleItem[];
   payments: Payment[];
 }
@@ -93,11 +103,16 @@ export interface NewSaleInput {
   note?: string;
   customer?: { name: string; ci: string };
   guests?: Guest[];
+  promoter_code?: string;
+  /** presale: the night the entries are for */
+  presale?: { event_day: string } | null;
   items: { product_id: string; qty: number }[];
   payment: {
     method: PaymentMethod;
     amount: number;
     reference?: string;
+    /** QR only: true = seller already confirmed it in the bank app */
+    confirmed?: boolean;
     proof?: { file: Blob; hash: string } | null;
   };
 }
@@ -116,6 +131,8 @@ export interface SaleFilters {
   status?: PaymentStatus | "";
   staff?: string; // profile id
   search?: string; // buyer/guest name or CI
+  /** filter by the sale day (default) or by the night the entries are for */
+  by?: "business_day" | "event_day";
 }
 
 /** One entry sale found at the door by name or CI. */
@@ -131,6 +148,8 @@ export interface Reservation {
   payment_status: PaymentStatus | null;
   sold_by: string | null;
   sale_status: SaleStatus;
+  is_presale?: boolean;
+  promoter_code?: string | null;
 }
 
 export const METHOD_LABEL: Record<PaymentMethod, string> = {

@@ -102,11 +102,13 @@ export default function ProductsPage() {
                           <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm truncate">{p.name}</p>
-                              {p.type === "entrada" && (p.free_until || p.max_per_night || (p.people_per_unit ?? 1) > 1) && (
+                              {(p.cost != null || (p.type === "entrada" && (p.free_until || p.max_per_night || p.presale_price != null || (p.people_per_unit ?? 1) > 1))) && (
                                 <p className="mt-1 flex flex-wrap gap-1.5">
-                                  {p.free_until && p.price > 0 && <Tag>Libre hasta {p.free_until}</Tag>}
-                                  {(p.people_per_unit ?? 1) > 1 && <Tag>{p.people_per_unit} personas</Tag>}
-                                  {p.max_per_night && <Tag>Cupo {p.max_per_night} por noche</Tag>}
+                                  {p.type === "entrada" && p.free_until && p.price > 0 && <Tag>Libre hasta {p.free_until}</Tag>}
+                                  {p.type === "entrada" && (p.people_per_unit ?? 1) > 1 && <Tag>Incluye {p.people_per_unit} entradas</Tag>}
+                                  {p.type === "entrada" && p.max_per_night && <Tag>Cupo {p.max_per_night} por noche</Tag>}
+                                  {p.type === "entrada" && p.presale_price != null && <Tag>Preventa {bs(p.presale_price)}</Tag>}
+                                  {p.cost != null && <span className="inline-flex rounded-md bg-surface-2 text-ink-2 px-1.5 py-0.5 text-[11px]">Costo {bs(p.cost)}</span>}
                                 </p>
                               )}
                             </div>
@@ -183,6 +185,20 @@ export default function ProductsPage() {
                 <Input type="number" inputMode="decimal" step="0.5" min="0" value={draft.price} onChange={(e) => setDraft({ ...draft, price: Number(e.target.value) })} className="tabular" />
               </label>
             )}
+            <label className="block">
+              <Label>Costo por unidad (Bs, opcional)</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.5"
+                min="0"
+                placeholder="Sin costo registrado"
+                value={draft.cost ?? ""}
+                onChange={(e) => setDraft({ ...draft, cost: e.target.value === "" ? null : Number(e.target.value) })}
+                className="tabular"
+              />
+              <span className="block text-xs text-muted mt-1">Se usa para calcular el costo y el margen en el cierre del día.</span>
+            </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="accent-[var(--color-accent)]" />
               Activo (visible al vender)
@@ -270,7 +286,22 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
       </div>
 
       <label className="block">
-        <Label>Personas por entrada</Label>
+        <Label>Precio de preventa (Bs, opcional)</Label>
+        <Input
+          type="number"
+          inputMode="decimal"
+          step="0.5"
+          min="0"
+          placeholder="Igual al precio normal"
+          value={draft.presale_price ?? ""}
+          onChange={(e) => setDraft({ ...draft, presale_price: e.target.value === "" ? null : Number(e.target.value) })}
+          className="tabular"
+        />
+        <span className="block text-xs text-muted mt-1">Se cobra al vender en preventa para una noche futura.</span>
+      </label>
+
+      <label className="block">
+        <Label>Entradas incluidas</Label>
         <Input
           type="number"
           inputMode="numeric"
@@ -280,7 +311,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           onChange={(e) => setDraft({ ...draft, people_per_unit: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
           className="tabular"
         />
-        <span className="block text-xs text-muted mt-1">1 para entrada individual. Para una mesa, cuántas personas incluye (ej. 6).</span>
+        <span className="block text-xs text-muted mt-1">Personas que entran con cada unidad: 1 para una entrada individual, por ejemplo 12 para una mesa VIP.</span>
       </label>
 
       <label className="block">

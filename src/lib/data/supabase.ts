@@ -12,9 +12,9 @@ type SaleRow = Omit<Sale, "items" | "payments" | "created_by_name" | "voided_by_
 };
 
 const SALE_SELECT =
-  "id, created_at, business_day, created_by, table_label, note, total, status, void_reason, voided_by, voided_at, customer_name, customer_ci, " +
+  "id, created_at, business_day, created_by, table_label, note, total, status, void_reason, voided_by, voided_at, customer_name, customer_ci, event_day, is_presale, promoter_code, " +
   "sale_guests(full_name, ci), " +
-  "sale_items(id, product_id, name, product_type, people_per_unit, qty, unit_price, subtotal), " +
+  "sale_items(id, product_id, name, product_type, people_per_unit, qty, unit_price, subtotal, unit_cost), " +
   "payments(id, sale_id, method, amount, reference, proof_path, proof_hash, status, reject_reason, verified_by, verified_at, created_at)";
 
 const num = (v: unknown) => Number(v ?? 0);
@@ -39,7 +39,10 @@ function toSale(r: SaleRow, names: Map<string, string>): Sale {
     customer_name: r.customer_name,
     customer_ci: r.customer_ci,
     guests: r.sale_guests ?? [],
-    items: (r.sale_items ?? []).map((i) => ({ ...i, unit_price: num(i.unit_price), subtotal: num(i.subtotal) })),
+    event_day: r.event_day ?? r.business_day,
+    is_presale: !!r.is_presale,
+    promoter_code: r.promoter_code ?? null,
+    items: (r.sale_items ?? []).map((i) => ({ ...i, unit_price: num(i.unit_price), subtotal: num(i.subtotal), unit_cost: i.unit_cost == null ? null : num(i.unit_cost) })),
     payments: (r.payments ?? []).map((p) => ({ ...p, amount: num(p.amount), verified_by_name: name(p.verified_by) })),
   };
 }
@@ -86,9 +89,9 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
     async listProducts(includeInactive = false) {
       let q = sb.from("products").select("*").order("type").order("category").order("name");
       if (!includeInactive) q = q.eq("active", true);
-      const rows = check(await q) as { price: unknown; free_until?: string | null }[];
+      const rows = check(await q) as { price: unknown; free_until?: string | null; cost?: unknown; presale_price?: unknown }[];
       // Postgres returns time as "HH:MM:SS"; the app uses "HH:MM"
-      return rows.map((r) => ({ ...(r as object), price: num(r.price), free_until: r.free_until ? r.free_until.slice(0, 5) : null })) as never;
+      return rows.map((r) => ({ ...(r as object), price: num(r.price), free_until: r.free_until ? r.free_until.slice(0, 5) : null, cost: r.cost == null ? null : num(r.cost), presale_price: r.presale_price == null ? null : num(r.presale_price) })) as never;
     },
     async saveProduct(p) {
       const { id, ...rest } = p;
@@ -97,12 +100,14 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
         max_per_night: rest.type === "entrada" && rest.max_per_night ? rest.max_per_night : null,
         free_until: rest.type === "entrada" && rest.free_until ? rest.free_until : null,
         people_per_unit: rest.type === "entrada" ? Math.max(1, rest.people_per_unit ?? 1) : 1,
+        presale_price: rest.type === "entrada" && rest.presale_price != null && !Number.isNaN(rest.presale_price) ? rest.presale_price : null,
+        cost: rest.cost != null && !Number.isNaN(rest.cost) ? rest.cost : null,
       };
       if (id) check(await sb.from("products").update(row).eq("id", id));
       else check(await sb.from("products").insert(row));
     },
-    async entryCounts() {
-      const rows = (check(await sb.rpc("entry_counts", {})) ?? []) as { product_id: string; sold: number }[];
+    async entryCounts(day) {
+      const rows = (check(await sb.rpc("entry_counts", day ? { p_day: day } : {})) ?? []) as { product_id: string; sold: number }[];
       return Object.fromEntries(rows.map((r) => [r.product_id, Number(r.sold)]));
     },
 
@@ -124,12 +129,15 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
             table_label: input.table_label ?? "",
             note: input.note ?? "",
             customer: input.customer ?? null,
+            promoter_code: input.promoter_code ?? "",
+            presale: input.presale ?? null,
             guests: input.guests ?? [],
             items: input.items,
             payment: {
               method: input.payment.method,
               amount: input.payment.amount,
               reference: input.payment.reference ?? "",
+              confirmed: !!input.payment.confirmed,
               proof_path,
               proof_hash: input.payment.proof?.hash ?? "",
             },
@@ -144,7 +152,8 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
       return rows.map((r) => ({ ...r, total: num(r.total), guests: r.guests ?? [] }));
     },
     async listSales(f) {
-      let q = sb.from("sales").select(SALE_SELECT).gte("business_day", f.from).lte("business_day", f.to);
+      const col = f.by ?? "business_day";
+      let q = sb.from("sales").select(SALE_SELECT).gte(col, f.from).lte(col, f.to);
       if (f.staff) q = q.eq("created_by", f.staff);
       const [res, names] = await Promise.all([q.order("created_at", { ascending: false }), profileNames()]);
       const rows = check(res) as unknown as SaleRow[];

@@ -111,12 +111,11 @@ const currentId = () => {
   }
 };
 
-/** Entries sold tonight per product id (non-void sales of the current business day). */
-function soldTonight(s: Store): Record<string, number> {
-  const today = businessDay();
+/** Entries per product id for a night (non-void sales whose entries are for that night, presales included). */
+function soldTonight(s: Store, day = businessDay()): Record<string, number> {
   const out: Record<string, number> = {};
   for (const sale of s.sales)
-    if (sale.status !== "void" && sale.business_day === today)
+    if (sale.status !== "void" && (sale.event_day ?? sale.business_day) === day)
       for (const i of sale.items) if (i.product_type === "entrada") out[i.product_id] = (out[i.product_id] ?? 0) + i.qty;
   return out;
 }
@@ -188,13 +187,15 @@ export function createDemoApi(): DataApi {
         max_per_night: p.type === "entrada" && p.max_per_night ? p.max_per_night : null,
         free_until: p.type === "entrada" && p.free_until ? p.free_until : null,
         people_per_unit: p.type === "entrada" ? Math.max(1, p.people_per_unit ?? 1) : 1,
+        presale_price: p.type === "entrada" && p.presale_price != null && !Number.isNaN(p.presale_price) ? p.presale_price : null,
+        cost: p.cost != null && !Number.isNaN(p.cost) ? p.cost : null,
       };
       if (p.id) s.products = s.products.map((x) => (x.id === p.id ? { ...x, ...clean, id: x.id } : x));
       else s.products.push({ ...clean, id: uuid() });
       save(s);
     },
-    async entryCounts() {
-      return soldTonight(load());
+    async entryCounts(day) {
+      return soldTonight(load(), day);
     },
 
     async checkDuplicate(reference, hash) {
@@ -214,14 +215,19 @@ export function createDemoApi(): DataApi {
       if (!input.items.length) throw new Error("La venta no tiene productos");
       const now = new Date().toISOString();
       const saleId = uuid();
-      const sold = soldTonight(s);
+      const today = businessDay(now);
+      const presale = !!input.presale?.event_day;
+      const eventDay = presale ? input.presale!.event_day : today;
+      if (presale && eventDay < today) throw new Error("La fecha de la preventa no puede ser anterior a hoy");
+      const sold = soldTonight(s, eventDay);
       const items = input.items.map((i) => {
         const prod = s.products.find((p) => p.id === i.product_id && p.active);
         if (!prod) throw new Error("Producto no encontrado");
         if (prod.type === "entrada" && prod.max_per_night && (sold[prod.id] ?? 0) + i.qty > prod.max_per_night)
           throw new Error(`Cupo agotado para ${prod.name}: quedan ${Math.max(prod.max_per_night - (sold[prod.id] ?? 0), 0)}`);
-        const price = effectivePrice(prod);
-        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, people_per_unit: prod.people_per_unit ?? 1, qty: i.qty, unit_price: price, subtotal: price * i.qty };
+        if (presale && prod.type !== "entrada") throw new Error("La preventa solo puede incluir entradas");
+        const price = prod.type === "entrada" && presale ? prod.presale_price ?? prod.price : effectivePrice(prod);
+        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, people_per_unit: prod.people_per_unit ?? 1, qty: i.qty, unit_price: price, subtotal: price * i.qty, unit_cost: prod.cost ?? null };
       });
       const customerName = input.customer?.name.trim() ?? "";
       const customerCi = input.customer?.ci.trim() ?? "";
@@ -234,7 +240,7 @@ export function createDemoApi(): DataApi {
         proof_path = `demo/${uuid()}.jpg`;
         s.proofs[proof_path] = await blobToDataUrl(small);
       }
-      const isQr = input.payment.method === "qr";
+      const confirmed = input.payment.method !== "qr" || !!input.payment.confirmed;
       const payment: Payment = {
         id: uuid(),
         sale_id: saleId,
@@ -243,10 +249,10 @@ export function createDemoApi(): DataApi {
         reference: input.payment.reference?.trim() || null,
         proof_path,
         proof_hash: input.payment.proof?.hash ?? null,
-        status: isQr ? "pending" : "verified",
+        status: confirmed ? "verified" : "pending",
         reject_reason: null,
-        verified_by: isQr ? null : user.id,
-        verified_at: isQr ? null : now,
+        verified_by: confirmed ? user.id : null,
+        verified_at: confirmed ? now : null,
         created_at: now,
       };
       s.sales.push({
@@ -263,6 +269,9 @@ export function createDemoApi(): DataApi {
         voided_at: null,
         customer_name: customerName || null,
         customer_ci: customerCi || null,
+        event_day: eventDay,
+        is_presale: presale,
+        promoter_code: input.promoter_code?.trim().toUpperCase() || null,
         guests: (input.guests ?? []).filter((g) => g.full_name.trim()).map((g) => ({ full_name: g.full_name.trim(), ci: g.ci?.trim() || null })),
         items,
         payments: [payment],
@@ -278,7 +287,7 @@ export function createDemoApi(): DataApi {
       const out: Reservation[] = [];
       for (const x of s.sales) {
         const entries = x.items.filter((i) => i.product_type === "entrada");
-        if (x.business_day !== today || !entries.length || !matchesPerson(x, q)) continue;
+        if ((x.event_day ?? x.business_day) !== today || !entries.length || !matchesPerson(x, q)) continue;
         out.push({
           sale_id: x.id,
           created_at: x.created_at,
@@ -291,6 +300,8 @@ export function createDemoApi(): DataApi {
           payment_status: x.payments[0]?.status ?? null,
           sold_by: s.profiles.find((p) => p.id === x.created_by)?.full_name ?? null,
           sale_status: x.status,
+          is_presale: !!x.is_presale,
+          promoter_code: x.promoter_code ?? null,
         });
       }
       return out.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 20);
@@ -298,7 +309,10 @@ export function createDemoApi(): DataApi {
     async listSales(f) {
       const s = load();
       return visible(s)
-        .filter((x) => x.business_day >= f.from && x.business_day <= f.to)
+        .filter((x) => {
+          const d = f.by === "event_day" ? x.event_day ?? x.business_day : x.business_day;
+          return d >= f.from && d <= f.to;
+        })
         .filter((x) => !f.staff || x.created_by === f.staff)
         .filter((x) => !f.search || matchesPerson(x, f.search))
         .filter((x) => !f.method || x.payments.some((p) => p.method === f.method))
@@ -314,9 +328,12 @@ export function createDemoApi(): DataApi {
         .map((x) => withName(s, { ...x, payments: x.payments.filter((p) => p.status === "pending") }));
     },
     async setPaymentStatus(paymentId, status, reason) {
-      requireAdmin();
       const user = me();
       const s = load();
+      // admins verify any payment; staff only their own sales of tonight (same rule as the database)
+      const owner = s.sales.find((x) => x.payments.some((p) => p.id === paymentId));
+      if (user.role !== "admin" && !(owner && owner.created_by === user.id && owner.business_day === businessDay()))
+        throw new Error("Solo puedes verificar pagos de tus ventas de esta noche");
       for (const sale of s.sales)
         for (const p of sale.payments)
           if (p.id === paymentId) {

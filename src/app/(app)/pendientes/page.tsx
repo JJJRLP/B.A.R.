@@ -32,7 +32,7 @@ export default function PendingPage() {
     <div>
       <PageHeader
         title="Pagos pendientes"
-        subtitle={sales && sales.length > 0 ? `${sales.length} por verificar · ${bs(totalPending)}` : "Revisa cada monto en la app del banco antes de verificar."}
+        subtitle={sales && sales.length > 0 ? `${sales.length} por verificar · ${bs(totalPending)}` : "Revisa cada monto en la app del banco antes de verificar. El personal ve sus propias ventas de la noche."}
       />
       {sales && sales.length > 0 && (
         <ol className="mb-5 grid gap-2 sm:grid-cols-3 text-sm">

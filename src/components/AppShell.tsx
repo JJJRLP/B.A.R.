@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ClipboardList, Clock, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Clock, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getApi } from "@/lib/data";
 import { cx } from "./ui";
@@ -11,9 +11,10 @@ import { cx } from "./ui";
 const NAV = [
   { href: "/", label: "Nueva venta", short: "Vender", icon: PlusCircle, admin: false, mobile: true },
   { href: "/ventas", label: "Ventas", short: "Ventas", icon: Receipt, admin: false, mobile: true },
-  { href: "/pendientes", label: "Pendientes", short: "Pend.", icon: Clock, admin: true, mobile: true },
+  { href: "/pendientes", label: "Pendientes", short: "Pend.", icon: Clock, admin: false, mobile: true },
   { href: "/cierre", label: "Cierre del día", short: "Cierre", icon: ClipboardList, admin: true, mobile: true },
   { href: "/actividad", label: "Actividad", short: "Actividad", icon: History, admin: true, mobile: true },
+  { href: "/reportes", label: "Reportes", short: "Reportes", icon: BarChart3, admin: true, mobile: false },
   { href: "/productos", label: "Productos", short: "Prod.", icon: Package, admin: true, mobile: false },
   { href: "/equipo", label: "Equipo", short: "Equipo", icon: Users, admin: true, mobile: false },
 ];
@@ -28,12 +29,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Refresh the pending badge whenever the admin moves between screens.
   useEffect(() => {
-    if (!isAdmin) return;
     getApi()
       .listPending()
       .then((s) => setPendingCount(s.reduce((a, x) => a + x.payments.length, 0)))
       .catch(() => {});
-  }, [isAdmin, pathname]);
+  }, [pathname]);
 
   const logout = async () => {
     await getApi().signOut();
@@ -57,9 +57,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <nav className="flex-1 px-3 space-y-0.5">
-          {items.map((n, i) => {
+          {items.map((n) => {
             const active = pathname === n.href;
-            const divider = isAdmin && i === 5;
+            const divider = isAdmin && n.href === "/productos";
             return (
               <div key={n.href}>
                 {divider && <p className="px-3 pt-4 pb-1.5 text-[11px] uppercase tracking-wide text-muted">Administración</p>}

@@ -6,7 +6,9 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Download, GlassWater, Ticket 
 import { getApi } from "@/lib/data";
 import { addDays, bs, businessDay, longDay } from "@/lib/format";
 import { exportProductsCsv, exportSalesCsv } from "@/lib/csv";
-import type { PaymentMethod, ProductType, Sale } from "@/lib/types";
+import type { PaymentMethod, Product, ProductType, Sale } from "@/lib/types";
+import { costSummary, planRows, presaleSold, promoterRows, topProducts } from "@/lib/analytics";
+import { CostCard, PlansTable, PromotersTable, TopProducts } from "@/components/Analytics";
 import { METHOD_LABEL } from "@/lib/types";
 import { Button, Card, Input, Label, PageHeader, Spinner, cx } from "@/components/ui";
 
@@ -16,12 +18,36 @@ export default function ClosePage() {
   const today = businessDay();
   const [day, setDay] = useState(today);
   const [sales, setSales] = useState<Sale[] | null>(null);
+  // entries for this night, including presales sold on earlier days
+  const [nightSales, setNightSales] = useState<Sale[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [cashCount, setCashCount] = useState("");
 
   const load = useCallback(async () => {
     setSales(null);
-    setSales(await getApi().listSales({ from: day, to: day }));
+    const api = getApi();
+    const [sold, night, prods] = await Promise.all([
+      api.listSales({ from: day, to: day }),
+      api.listSales({ from: day, to: day, by: "event_day" }),
+      api.listProducts(true),
+    ]);
+    setNightSales(night);
+    setProducts(prods);
+    setSales(sold);
   }, [day]);
+
+  const a = useMemo(() => {
+    const plans = planRows(nightSales, products);
+    return {
+      plans,
+      nightPeople: plans.reduce((x, r) => x + r.people, 0),
+      nightPresalePeople: planRows(nightSales.filter((x) => x.is_presale)).reduce((x, r) => x + r.people, 0),
+      top: topProducts(sales ?? []),
+      promoters: promoterRows(sales ?? []),
+      costs: costSummary(sales ?? []),
+      presale: presaleSold((sales ?? []).filter((x) => (x.event_day ?? x.business_day) > x.business_day)),
+    };
+  }, [nightSales, products, sales]);
 
   useEffect(() => {
     load().catch(() => setSales([]));
@@ -145,28 +171,32 @@ export default function ClosePage() {
                   <p className="text-2xl font-semibold tabular mt-1">{bs(s.entryAmount)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-semibold tabular">{s.people}</p>
-                  <p className="text-xs text-muted">{s.people === 1 ? "persona" : "personas"}</p>
+                  <p className="text-2xl font-semibold tabular">{a.nightPeople}</p>
+                  <p className="text-xs text-muted">{a.nightPeople === 1 ? "persona esta noche" : "personas esta noche"}</p>
                 </div>
               </div>
-              {s.entryRows.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {s.entryRows.map((r) => (
-                    <span key={r.name} className="rounded-md bg-surface-2 border border-line px-2.5 py-1 text-xs text-ink-2">
-                      {r.name}: <span className="text-ink tabular">{r.qty}</span> · <span className="tabular">{bs(r.amount)}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <p className="text-xs text-ink-2 mt-3">
+                Cobrado hoy en entradas.
+                {a.nightPresalePeople > 0 && ` Incluye ${a.nightPresalePeople} ${a.nightPresalePeople === 1 ? "persona" : "personas"} con preventa.`}
+                {a.presale.soldCount > 0 && ` Hoy se vendieron ${a.presale.soldCount} preventas para otras noches (${bs(a.presale.soldAmount)}, ${a.presale.soldPeople} personas).`}
+              </p>
             </Card>
             <Card className="p-5">
               <p className="text-xs uppercase tracking-wide text-muted flex items-center gap-1.5">
                 <GlassWater size={14} /> Barra · Consumo
               </p>
               <p className="text-2xl font-semibold tabular mt-1">{bs(s.barAmount)}</p>
-              {s.people > 0 && <p className="text-xs text-ink-2 mt-3">Consumo promedio por persona: <span className="text-ink tabular">{bs(s.barAmount / s.people)}</span></p>}
+              {a.nightPeople > 0 && <p className="text-xs text-ink-2 mt-3">Consumo promedio por persona: <span className="text-ink tabular">{bs(s.barAmount / a.nightPeople)}</span></p>}
             </Card>
           </div>
+
+          {/* Plans with people, best sellers, promoters, costs */}
+          <PlansTable rows={a.plans} />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <TopProducts rows={a.top} />
+            <PromotersTable rows={a.promoters} />
+          </div>
+          <CostCard summary={a.costs} products={a.top} />
 
           {/* By staff */}
           <Card className="p-5">
