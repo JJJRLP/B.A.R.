@@ -70,7 +70,7 @@ export function Card({ children, className }: { children: React.ReactNode; class
 
 export function StatusBadge({ status }: { status: PaymentStatus | "void" }) {
   const styles: Record<string, string> = {
-    pending: "bg-accent/15 text-accent border-accent/30",
+    pending: "bg-warn/15 text-warn border-warn/30",
     verified: "bg-ok/15 text-ok border-ok/30",
     rejected: "bg-bad/15 text-bad border-bad/30",
     void: "bg-surface-2 text-muted border-line",

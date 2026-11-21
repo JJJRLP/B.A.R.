@@ -47,7 +47,23 @@ export default function ClosePage() {
       }
     const pending = payments.filter((p) => p.status === "pending");
     const rejected = payments.filter((p) => p.status === "rejected");
+    type StaffRow = { name: string; count: number; total: number; cash: number; qr: number; card: number; pending: number; voided: number };
+    const staff = new Map<string, StaffRow>();
+    for (const sale of list) {
+      const row = staff.get(sale.created_by) ?? { name: sale.created_by_name ?? "—", count: 0, total: 0, cash: 0, qr: 0, card: 0, pending: 0, voided: 0 };
+      if (sale.status === "void") row.voided += 1;
+      else {
+        row.count += 1;
+        row.total += sale.total;
+        for (const p of sale.payments) {
+          row[p.method] += p.amount;
+          if (p.status === "pending") row.pending += p.amount;
+        }
+      }
+      staff.set(sale.created_by, row);
+    }
     return {
+      byStaff: Array.from(staff.values()).sort((a, b) => b.total - a.total),
       count: active.length,
       sold: active.reduce((a, x) => a + x.total, 0),
       verified: payments.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0),
@@ -90,12 +106,12 @@ export default function ClosePage() {
       ) : (
         <div className="space-y-5">
           {s.pendingCount > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/30 bg-accent/[0.07] px-4 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn/[0.07] px-4 py-3">
               <p className="text-sm flex items-center gap-2">
-                <AlertTriangle size={16} className="text-accent" />
+                <AlertTriangle size={16} className="text-warn" />
                 {s.pendingCount} {s.pendingCount === 1 ? "pago pendiente" : "pagos pendientes"} por {bs(s.pendingAmount)}. El cierre no está completo.
               </p>
-              <Link href="/pendientes" className="text-sm text-accent hover:underline">
+              <Link href="/pendientes" className="text-sm text-warn hover:underline">
                 Revisar pendientes →
               </Link>
             </div>
@@ -105,9 +121,53 @@ export default function ClosePage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Kpi label="Vendido" value={bs(s.sold)} hint={`${s.count} ${s.count === 1 ? "venta" : "ventas"}`} />
             <Kpi label="Cobrado verificado" value={bs(s.verified)} tone="ok" />
-            <Kpi label="Pendiente" value={bs(s.pendingAmount)} hint={`${s.pendingCount} pagos`} tone={s.pendingCount ? "accent" : undefined} />
+            <Kpi label="Pendiente" value={bs(s.pendingAmount)} hint={`${s.pendingCount} pagos`} tone={s.pendingCount ? "warn" : undefined} />
             <Kpi label="Rechazado / anulado" value={bs(s.rejectedAmount)} hint={`${s.rejectedCount} rechazados · ${s.voided} anuladas`} tone={s.rejectedCount ? "bad" : undefined} />
           </div>
+
+          {/* By staff */}
+          <Card className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold">Por personal</h2>
+              <Link href="/actividad" className="text-sm text-accent hover:underline">
+                Ver registro de actividad →
+              </Link>
+            </div>
+            {s.byStaff.length === 0 ? (
+              <p className="text-sm text-muted py-4 text-center">Sin ventas este día.</p>
+            ) : (
+              <div className="overflow-x-auto -mx-5 px-5">
+                <table className="w-full text-sm min-w-[560px]">
+                  <thead>
+                    <tr className="text-xs uppercase tracking-wide text-muted">
+                      <th className="text-left font-medium pb-2">Persona</th>
+                      <th className="text-right font-medium pb-2">Ventas</th>
+                      <th className="text-right font-medium pb-2">Efectivo</th>
+                      <th className="text-right font-medium pb-2">QR</th>
+                      <th className="text-right font-medium pb-2">Tarjeta</th>
+                      <th className="text-right font-medium pb-2">Pendiente</th>
+                      <th className="text-right font-medium pb-2">Anuladas</th>
+                      <th className="text-right font-medium pb-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {s.byStaff.map((r) => (
+                      <tr key={r.name}>
+                        <td className="py-2.5 font-medium">{r.name}</td>
+                        <td className="py-2.5 text-right tabular text-ink-2">{r.count}</td>
+                        <td className="py-2.5 text-right tabular">{bs(r.cash)}</td>
+                        <td className="py-2.5 text-right tabular">{bs(r.qr)}</td>
+                        <td className="py-2.5 text-right tabular">{bs(r.card)}</td>
+                        <td className={cx("py-2.5 text-right tabular", r.pending ? "text-warn" : "text-muted")}>{bs(r.pending)}</td>
+                        <td className={cx("py-2.5 text-right tabular", r.voided ? "text-bad" : "text-muted")}>{r.voided}</td>
+                        <td className="py-2.5 text-right tabular font-semibold">{bs(r.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
 
           <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
             {/* By method */}
@@ -128,7 +188,7 @@ export default function ClosePage() {
                       <td className="py-2.5">{METHOD_LABEL[m]}</td>
                       <td className="py-2.5 text-right tabular text-ink-2">{s.byMethod[m].count}</td>
                       <td className="py-2.5 text-right tabular">{bs(s.byMethod[m].verified)}</td>
-                      <td className={cx("py-2.5 text-right tabular", s.byMethod[m].pending ? "text-accent" : "text-muted")}>{bs(s.byMethod[m].pending)}</td>
+                      <td className={cx("py-2.5 text-right tabular", s.byMethod[m].pending ? "text-warn" : "text-muted")}>{bs(s.byMethod[m].pending)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -202,11 +262,11 @@ export default function ClosePage() {
   );
 }
 
-function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "accent" | "bad" }) {
+function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" }) {
   return (
     <Card className="p-4">
       <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
-      <p className={cx("text-xl md:text-2xl font-semibold tabular mt-1", tone === "ok" && "text-ok", tone === "accent" && "text-accent", tone === "bad" && "text-bad")}>{value}</p>
+      <p className={cx("text-xl md:text-2xl font-semibold tabular mt-1", tone === "ok" && "text-ok", tone === "warn" && "text-warn", tone === "bad" && "text-bad")}>{value}</p>
       {hint && <p className="text-xs text-ink-2 mt-0.5">{hint}</p>}
     </Card>
   );

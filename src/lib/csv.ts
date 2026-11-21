@@ -6,7 +6,7 @@ const esc = (v: unknown) => {
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
-function download(name: string, rows: unknown[][]) {
+export function downloadCsv(name: string, rows: unknown[][]) {
   const csv = "﻿" + rows.map((r) => r.map(esc).join(",")).join("\n");
   const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
@@ -18,7 +18,11 @@ function download(name: string, rows: unknown[][]) {
 
 export function exportSalesCsv(sales: Sale[], label: string) {
   const rows: unknown[][] = [
-    ["dia", "fecha_hora", "venta_id", "personal", "mesa", "estado_venta", "metodo", "monto", "estado_pago", "referencia", "total_venta", "productos", "nota"],
+    [
+      "dia", "fecha_hora", "venta_id", "registrado_por", "mesa", "productos", "total_venta",
+      "metodo", "monto_pagado", "estado_pago", "referencia", "verificado_por", "verificado_en", "motivo_rechazo",
+      "estado_venta", "anulado_por", "anulado_en", "motivo_anulacion", "nota",
+    ],
   ];
   for (const s of sales)
     for (const p of s.payments)
@@ -28,18 +32,24 @@ export function exportSalesCsv(sales: Sale[], label: string) {
         s.id,
         s.created_by_name ?? "",
         s.table_label ?? "",
-        s.status === "void" ? "anulada" : "pagada",
+        s.items.map((i) => `${i.qty}x ${i.name}`).join(" | "),
+        s.total.toFixed(2),
         METHOD_LABEL[p.method],
         p.amount.toFixed(2),
         STATUS_LABEL[p.status],
         p.reference ?? "",
-        s.total.toFixed(2),
-        s.items.map((i) => `${i.qty}x ${i.name}`).join(" | "),
+        p.verified_by_name ?? "",
+        p.verified_at ?? "",
+        p.reject_reason ?? "",
+        s.status === "void" ? "anulada" : "vigente",
+        s.voided_by_name ?? "",
+        s.voided_at ?? "",
+        s.void_reason ?? "",
         s.note ?? "",
       ]);
-  download(`ventas_${label}.csv`, rows);
+  downloadCsv(`ventas_${label}.csv`, rows);
 }
 
 export function exportProductsCsv(rows: { name: string; qty: number; amount: number }[], label: string) {
-  download(`productos_${label}.csv`, [["producto", "cantidad", "monto_bs"], ...rows.map((r) => [r.name, r.qty, r.amount.toFixed(2)])]);
+  downloadCsv(`productos_${label}.csv`, [["producto", "cantidad", "monto_bs"], ...rows.map((r) => [r.name, r.qty, r.amount.toFixed(2)])]);
 }

@@ -40,6 +40,7 @@ export interface Payment {
   reject_reason: string | null;
   verified_by: string | null;
   verified_at: string | null;
+  verified_by_name?: string;
   created_at: string;
 }
 
@@ -54,6 +55,9 @@ export interface Sale {
   total: number;
   status: SaleStatus;
   void_reason: string | null;
+  voided_by: string | null;
+  voided_by_name?: string;
+  voided_at: string | null;
   items: SaleItem[];
   payments: Payment[];
 }
@@ -82,6 +86,7 @@ export interface SaleFilters {
   to: string;
   method?: PaymentMethod | "";
   status?: PaymentStatus | "";
+  staff?: string; // profile id
 }
 
 export const METHOD_LABEL: Record<PaymentMethod, string> = {

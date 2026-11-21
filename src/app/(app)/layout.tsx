@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
 import { Spinner } from "@/components/ui";
 
-const ADMIN_ONLY = ["/pendientes", "/cierre", "/productos", "/equipo"];
+const ADMIN_ONLY = ["/pendientes", "/cierre", "/actividad", "/productos", "/equipo"];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, loading, isAdmin } = useAuth();

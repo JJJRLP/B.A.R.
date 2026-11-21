@@ -82,6 +82,41 @@ export function VerifyActions({ payment, onDone }: { payment: Payment; onDone: (
   );
 }
 
+/** Who did what to this sale, in order. */
+function History({ sale }: { sale: Sale }) {
+  const steps: { at: string; who: string; what: string; tone: string }[] = [
+    { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-accent" },
+  ];
+  for (const p of sale.payments) {
+    if (p.method !== "qr" && p.verified_at) continue; // cash/card: confirmed on entry
+    if (p.status === "verified" && p.verified_at)
+      steps.push({ at: p.verified_at, who: p.verified_by_name ?? "—", what: `verificó el pago de ${bs(p.amount)}`, tone: "bg-ok" });
+    if (p.status === "rejected" && p.verified_at)
+      steps.push({ at: p.verified_at, who: p.verified_by_name ?? "—", what: `rechazó el pago${p.reject_reason ? `: “${p.reject_reason}”` : ""}`, tone: "bg-bad" });
+    if (p.status === "pending") steps.push({ at: "", who: "", what: "Pago pendiente de verificación", tone: "bg-warn" });
+  }
+  if (sale.status === "void")
+    steps.push({ at: sale.voided_at ?? "", who: sale.voided_by_name ?? "—", what: `anuló la venta${sale.void_reason ? `: “${sale.void_reason}”` : ""}`, tone: "bg-bad" });
+
+  return (
+    <div>
+      <Label>Historial</Label>
+      <ol className="relative border-l border-line ml-1.5 space-y-3">
+        {steps.map((s, i) => (
+          <li key={i} className="pl-4 relative">
+            <span className={`absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ${s.tone}`} />
+            <p className="text-sm">
+              {s.who && <span className="font-medium">{s.who} </span>}
+              <span className={s.who ? "text-ink-2" : "text-warn"}>{s.what}</span>
+            </p>
+            {s.at && <p className="text-xs text-muted tabular">{dateTime(s.at)}</p>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; onClose: () => void; onChanged: () => void }) {
   const { isAdmin } = useAuth();
   const [voiding, setVoiding] = useState(false);
@@ -125,11 +160,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
             <span className="text-xl font-semibold tabular">{bs(sale.total)}</span>
           </div>
           {sale.note && <p className="text-sm text-ink-2">Nota: {sale.note}</p>}
-          {sale.status === "void" && (
-            <p className="text-sm rounded-lg border border-line bg-surface-2 p-3">
-              <StatusBadge status="void" /> <span className="ml-2 text-ink-2">{sale.void_reason}</span>
-            </p>
-          )}
+          <History sale={sale} />
         </div>
 
         <div className="space-y-4">
@@ -143,7 +174,6 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
                 <StatusBadge status={p.status} />
               </div>
               {p.reference && <p className="text-sm text-ink-2">Referencia: <span className="text-ink font-mono">{p.reference}</span></p>}
-              {p.status === "rejected" && p.reject_reason && <p className="text-sm text-bad">Motivo: {p.reject_reason}</p>}
               {p.proof_path ? (
                 <div className="rounded-lg border border-line overflow-hidden bg-surface-2">
                   <ProofImage path={p.proof_path} />
@@ -183,7 +213,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
               </div>
             </div>
           ) : (
-            <Button variant="ghost" size="sm" className="text-bad" onClick={() => setVoiding(true)}>
+            <Button variant="danger" size="sm" onClick={() => setVoiding(true)}>
               Anular venta
             </Button>
           )}

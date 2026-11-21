@@ -1,18 +1,23 @@
 @import "tailwindcss";
 
-/* Black base, warm off-white text, gold accent. */
+/*
+  Palette: black base, off-white text, blue accent.
+  accent = actions and selection · ok = verified · warn = pending / needs attention · bad = rejected / voided.
+  To try another accent, change only --color-accent (and --color-accent-ink for text on it).
+*/
 @theme {
   --color-bg: #0a0a0b;
-  --color-surface: #131315;
-  --color-surface-2: #1b1b1e;
-  --color-line: #2a2a2e;
-  --color-ink: #f3efe6;
-  --color-ink-2: #b9b4a8;
-  --color-muted: #7d7970;
-  --color-accent: #e5b04a;
-  --color-accent-ink: #1a1306;
-  --color-ok: #5ccf8a;
-  --color-bad: #ef6b6b;
+  --color-surface: #131316;
+  --color-surface-2: #1b1b1f;
+  --color-line: #2a2a30;
+  --color-ink: #f2f0eb;
+  --color-ink-2: #b5b3ad;
+  --color-muted: #7a7973;
+  --color-accent: #4f8cff;
+  --color-accent-ink: #ffffff;
+  --color-ok: #4cc38a;
+  --color-warn: #f0a63c;
+  --color-bad: #ef6464;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }

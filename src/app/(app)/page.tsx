@@ -55,10 +55,13 @@ export default function NewSalePage() {
       return next;
     });
 
-  const onSaved = useCallback(() => {
+  const onSaved = useCallback((amount: number, method: PaymentMethod) => {
     setCart({});
     setSheetOpen(false);
-    setToast({ msg: "Venta registrada", kind: "ok" });
+    setToast({
+      msg: method === "qr" ? `Venta de ${bs(amount)} guardada · pago pendiente de verificación` : `Venta de ${bs(amount)} guardada y cobrada`,
+      kind: "ok",
+    });
   }, []);
 
   const checkout = (
@@ -77,7 +80,12 @@ export default function NewSalePage() {
       {/* Products */}
       <section className="min-w-0">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-semibold tracking-tight">Nueva venta</h1>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Nueva venta</h1>
+            <p className="text-sm text-ink-2 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              <Step n={1} /> Toca los productos <span className="text-muted">·</span> <Step n={2} /> elige cómo pagó <span className="text-muted">·</span> <Step n={3} /> guarda
+            </p>
+          </div>
         </div>
         <div className="relative mb-3">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -166,7 +174,7 @@ function Checkout({
   total: number;
   onAdd: (id: string, d: number) => void;
   onClear: () => void;
-  onSaved: () => void;
+  onSaved: (amount: number, method: PaymentMethod) => void;
   onError: (msg: string) => void;
 }) {
   const [method, setMethod] = useState<PaymentMethod>("qr");
@@ -248,7 +256,7 @@ function Checkout({
         },
       });
       reset();
-      onSaved();
+      onSaved(amountNum, method);
     } catch (e) {
       onError(e instanceof Error ? e.message : "No se pudo guardar la venta");
     } finally {
@@ -264,7 +272,9 @@ function Checkout({
     <div className="flex flex-col">
       {/* Lines */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-        <h2 className="font-semibold">Detalle</h2>
+        <h2 className="font-semibold flex items-center gap-2">
+          <Step n={1} /> Productos
+        </h2>
         <button onClick={onClear} className="text-xs text-muted hover:text-bad inline-flex items-center gap-1">
           <Trash2 size={14} /> Vaciar
         </button>
@@ -297,7 +307,9 @@ function Checkout({
       {/* Payment */}
       <div className="px-5 pt-5 pb-5 space-y-4">
         <div>
-          <Label>Método de pago</Label>
+          <Label className="flex items-center gap-2">
+            <Step n={2} /> ¿Cómo pagó?
+          </Label>
           <div className="grid grid-cols-3 gap-2">
             {METHODS.map((m) => (
               <button
@@ -318,7 +330,7 @@ function Checkout({
         {method === "qr" && (
           <div className="space-y-3">
             <div>
-              <Label>Comprobante</Label>
+              <Label>Comprobante del cliente</Label>
               {proof ? (
                 <div className="relative rounded-lg border border-line overflow-hidden bg-surface-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -380,10 +392,10 @@ function Checkout({
         </label>
 
         {(mismatch || dups.length > 0) && (
-          <div className="rounded-lg border border-accent/30 bg-accent/[0.07] p-3 space-y-1.5 text-sm">
+          <div className="rounded-lg border border-warn/30 bg-warn/[0.07] p-3 space-y-1.5 text-sm">
             {mismatch && (
               <p className="flex gap-2">
-                <AlertTriangle size={16} className="text-accent shrink-0 mt-0.5" />
+                <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
                 <span>
                   El monto ({bs(amountNum)}) no coincide con el total ({bs(total)}).
                 </span>
@@ -391,7 +403,7 @@ function Checkout({
             )}
             {dups.map((d) => (
               <p key={d.payment_id} className="flex gap-2">
-                <AlertTriangle size={16} className="text-accent shrink-0 mt-0.5" />
+                <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
                 <span>
                   Posible comprobante duplicado: {d.match === "reference" ? "misma referencia" : "misma imagen"} usado el {dateTime(d.created_at)} por {bs(d.amount)}.
                 </span>
@@ -401,10 +413,35 @@ function Checkout({
         )}
 
         <Button variant="primary" size="lg" className="w-full" disabled={saving} onClick={save}>
-          {saving ? "Guardando…" : method === "qr" ? `Registrar · queda pendiente` : `Registrar pago · ${bs(amountNum)}`}
+          {saving ? (
+            "Guardando…"
+          ) : (
+            <>
+              <Step n={3} invert /> {method === "qr" ? "Guardar venta" : `Guardar · cobrado ${bs(amountNum)}`}
+            </>
+          )}
         </Button>
-        {method === "qr" && !proof && <p className="text-xs text-muted text-center -mt-2">Sin comprobante: será más difícil verificar este pago.</p>}
+        <p className="text-xs text-muted text-center -mt-2">
+          {method === "qr"
+            ? proof
+              ? "El pago quedará pendiente hasta que el administrador lo verifique en el banco."
+              : "Sin comprobante el pago será difícil de verificar. Adjunta la captura si la tienes."
+            : "Efectivo y tarjeta se registran como cobrados al guardar."}
+        </p>
       </div>
     </div>
+  );
+}
+
+function Step({ n, invert }: { n: number; invert?: boolean }) {
+  return (
+    <span
+      className={cx(
+        "inline-grid place-items-center h-[18px] w-[18px] rounded-full text-[10px] font-semibold shrink-0",
+        invert ? "bg-accent-ink text-accent" : "bg-accent/15 text-accent",
+      )}
+    >
+      {n}
+    </span>
   );
 }

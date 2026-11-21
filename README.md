@@ -9,7 +9,8 @@ Built from the MVP PRD: Next.js + Tailwind on the front, Supabase (Postgres, Aut
 - **Automatic warnings**: amount ≠ total, and possible duplicate proof (same reference or same image).
 - **Pendientes** (admin): QR payments wait here until someone checks the bank app and marks them *Verificado* or *Rechazado* (with a reason).
 - **Ventas**: list with date, method and status filters; open a sale to see items and proof; admin can void a sale with a reason. Staff only see their own sales for the current business day.
-- **Cierre del día** (admin): totals by method and by product, pending/rejected counts, a cash count with the difference, and CSV export.
+- **Cierre del día** (admin): totals by method, by product and **by staff member**, pending/rejected counts, a cash count with the difference, and CSV export.
+- **Actividad** (admin): an audit log of who registered, verified, rejected or voided each sale, for how much and when. Filter by date, person and action; export to CSV. Each sale's detail also shows its own history.
 - **Productos** and **Equipo** (admin): manage products/prices and staff roles.
 
 A sale's *business day* rolls over at 06:00 La Paz time, so after-midnight sales count for the night before.

@@ -14,7 +14,7 @@ const SESSION = "bar-demo-session";
 interface Store {
   profiles: Profile[];
   products: Product[];
-  sales: Omit<Sale, "created_by_name">[];
+  sales: Omit<Sale, "created_by_name" | "voided_by_name">[];
   proofs: Record<string, string>; // path -> data URL
 }
 
@@ -85,10 +85,17 @@ export function createDemoApi(): DataApi {
     if (!p) throw new Error("Sesión expirada");
     return p;
   };
-  const withName = (s: Store, sale: Store["sales"][number]): Sale => ({
-    ...sale,
-    created_by_name: s.profiles.find((p) => p.id === sale.created_by)?.full_name,
-  });
+  const withName = (s: Store, sale: Store["sales"][number]): Sale => {
+    const name = (id: string | null) => (id ? s.profiles.find((p) => p.id === id)?.full_name : undefined);
+    return {
+      ...sale,
+      voided_by: sale.voided_by ?? null,
+      voided_at: sale.voided_at ?? null,
+      created_by_name: name(sale.created_by),
+      voided_by_name: name(sale.voided_by ?? null),
+      payments: sale.payments.map((p) => ({ ...p, verified_by_name: name(p.verified_by) })),
+    };
+  };
   const visible = (s: Store) => {
     const user = me();
     const today = businessDay();
@@ -188,6 +195,8 @@ export function createDemoApi(): DataApi {
         total: items.reduce((a, i) => a + i.subtotal, 0),
         status: "paid",
         void_reason: null,
+        voided_by: null,
+        voided_at: null,
         items,
         payments: [payment],
       });
@@ -199,6 +208,7 @@ export function createDemoApi(): DataApi {
       const s = load();
       return visible(s)
         .filter((x) => x.business_day >= f.from && x.business_day <= f.to)
+        .filter((x) => !f.staff || x.created_by === f.staff)
         .filter((x) => !f.method || x.payments.some((p) => p.method === f.method))
         .filter((x) => !f.status || x.payments.some((p) => p.status === f.status))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -232,6 +242,8 @@ export function createDemoApi(): DataApi {
       if (sale) {
         sale.status = "void";
         sale.void_reason = reason;
+        sale.voided_by = me().id;
+        sale.voided_at = new Date().toISOString();
       }
       save(s);
     },

@@ -34,6 +34,20 @@ export default function PendingPage() {
         title="Pagos pendientes"
         subtitle={sales && sales.length > 0 ? `${sales.length} por verificar · ${bs(totalPending)}` : "Revisa cada monto en la app del banco antes de verificar."}
       />
+      {sales && sales.length > 0 && (
+        <ol className="mb-5 grid gap-2 sm:grid-cols-3 text-sm">
+          {[
+            "Abre la app del banco del bar.",
+            "Busca un ingreso con el mismo monto y hora (o la referencia).",
+            "Si llegó, toca Verificado. Si no, Rechazar con el motivo.",
+          ].map((t, i) => (
+            <li key={i} className="flex gap-2.5 rounded-lg border border-line bg-surface px-3 py-2.5 text-ink-2">
+              <span className="h-5 w-5 shrink-0 rounded-full bg-accent/15 text-accent text-[11px] font-semibold grid place-items-center">{i + 1}</span>
+              {t}
+            </li>
+          ))}
+        </ol>
+      )}
       {error && <p className="text-sm text-bad mb-3">{error}</p>}
 
       {!sales ? (
@@ -66,7 +80,7 @@ export default function PendingPage() {
                       </p>
                     </div>
                     {Math.abs(p.amount - s.total) > 0.009 && (
-                      <span className="text-xs text-accent text-right">Total venta {bs(s.total)}</span>
+                      <span className="text-xs text-warn text-right">Total venta {bs(s.total)}</span>
                     )}
                   </div>
                   {p.reference && (
