@@ -6,7 +6,8 @@ import { getApi } from "@/lib/data";
 import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
-import { Button, Empty, Input, Label, Modal, Spinner, Toast, cx } from "@/components/ui";
+import { Button, Empty, Input, Label, Modal, Spinner, cx } from "@/components/primitives";
+import { toast } from "sonner";
 import { DoorLookup } from "@/components/DoorLookup";
 
 type Cart = Record<string, number>; // product id -> qty
@@ -24,13 +25,12 @@ export default function NewSalePage() {
   const [cart, setCart] = useState<Cart>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [lookupOpen, setLookupOpen] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; kind: "ok" | "bad" } | null>(null);
 
   useEffect(() => {
     getApi()
       .listProducts()
       .then(setProducts)
-      .catch((e) => setToast({ msg: e.message, kind: "bad" }));
+      .catch((e) => toast.error(e.message));
   }, []);
 
   // Preventa: entries sold now for a later night ("" = sale at the door for tonight)
@@ -99,7 +99,7 @@ export default function NewSalePage() {
   const add = (id: string, d = 1) => {
     const p = products?.find((x) => x.id === id);
     if (d > 0 && p && remaining(p) < d) {
-      setToast({ msg: `Cupo agotado para ${p.name}`, kind: "bad" });
+      toast.error(`Cupo agotado para ${p.name}`);
       return;
     }
     setCart((c) => {
@@ -114,7 +114,7 @@ export default function NewSalePage() {
     setCart({});
     setSheetOpen(false);
     refreshSold();
-    setToast({ msg: `${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada`, kind: "ok" });
+    toast.success(`${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada`);
   }, [refreshSold, presaleDay]);
 
   const checkout = (
@@ -126,7 +126,7 @@ export default function NewSalePage() {
       onAdd={add}
       onClear={() => setCart({})}
       onSaved={onSaved}
-      onError={(msg) => setToast({ msg, kind: "bad" })}
+      onError={(msg) => toast.error(msg)}
     />
   );
 
@@ -138,7 +138,7 @@ export default function NewSalePage() {
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Nueva venta</h1>
             <p className="text-sm text-ink-2 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-              <Step n={1} /> Elige entradas o productos <span className="text-muted">·</span> <Step n={2} /> cómo pagó <span className="text-muted">·</span> <Step n={3} /> guarda
+              <Step n={1} /> Elige entradas o productos <span className="text-muted-foreground">·</span> <Step n={2} /> cómo pagó <span className="text-muted-foreground">·</span> <Step n={3} /> guarda
             </p>
           </div>
           {mode === "entrada" && (
@@ -163,13 +163,13 @@ export default function NewSalePage() {
                 onClick={() => setMode(m)}
                 className={cx(
                   "h-11 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors",
-                  mode === m ? "bg-accent text-accent-ink" : "text-ink-2 hover:text-ink",
+                  mode === m ? "bg-primary text-primary-foreground" : "text-ink-2 hover:text-ink",
                 )}
               >
                 <Icon size={17} />
                 {label}
                 {n > 0 && (
-                  <span className={cx("min-w-5 h-5 px-1.5 rounded-full text-[11px] grid place-items-center tabular", mode === m ? "bg-accent-ink/20" : "bg-accent/15 text-accent")}>{n}</span>
+                  <span className={cx("min-w-5 h-5 px-1.5 rounded-full text-[11px] grid place-items-center tabular", mode === m ? "bg-primary-foreground/20" : "bg-primary/15 text-primary")}>{n}</span>
                 )}
               </button>
             );
@@ -206,7 +206,7 @@ export default function NewSalePage() {
         {mode === "consumo" && (
           <>
             <div className="relative mb-3">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Buscar producto" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 md:mx-0 md:px-0">
@@ -249,25 +249,25 @@ export default function NewSalePage() {
                   key={p.id}
                   className={cx(
                     "rounded-xl border p-4 flex items-center gap-4 transition-colors",
-                    qty ? "border-accent/60 bg-accent/[0.06]" : "border-line bg-surface",
+                    qty ? "border-primary/60 bg-primary/[0.06]" : "border-line bg-surface",
                     soldOut && "opacity-50",
                   )}
                 >
-                  <span className="h-11 w-11 rounded-lg bg-accent/12 text-accent grid place-items-center shrink-0">
+                  <span className="h-11 w-11 rounded-lg bg-primary/12 text-primary grid place-items-center shrink-0">
                     <Ticket size={20} />
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">
                       {p.name}
-                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted">incluye {p.people_per_unit} entradas</span>}
+                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted-foreground">incluye {p.people_per_unit} entradas</span>}
                     </p>
                     <p className="text-sm tabular flex flex-wrap items-center gap-x-2">
                       {price === 0 ? <span className="text-ok font-medium">Gratis</span> : <span className="text-ink-2">{bs(price)}</span>}
-                      {presaleDay && p.presale_price != null && p.presale_price !== p.price && <span className="text-xs text-muted line-through">{bs(p.price)}</span>}
-                      {freeNow && <span className="text-xs text-muted">hasta las {p.free_until}, luego {bs(p.price)}</span>}
+                      {presaleDay && p.presale_price != null && p.presale_price !== p.price && <span className="text-xs text-muted-foreground line-through">{bs(p.price)}</span>}
+                      {freeNow && <span className="text-xs text-muted-foreground">hasta las {p.free_until}, luego {bs(p.price)}</span>}
                     </p>
                     {p.max_per_night && (
-                      <p className={cx("text-xs tabular mt-0.5", left <= 0 ? "text-bad" : left <= 10 ? "text-warn" : "text-muted")}>
+                      <p className={cx("text-xs tabular mt-0.5", left <= 0 ? "text-bad" : left <= 10 ? "text-warn" : "text-muted-foreground")}>
                         {left <= 0 ? "Cupo agotado" : `Quedan ${left} de ${p.max_per_night}`}
                       </p>
                     )}
@@ -285,7 +285,7 @@ export default function NewSalePage() {
                     <button
                       onClick={() => add(p.id, 1)}
                       disabled={left <= 0}
-                      className="h-10 w-10 rounded-lg bg-accent text-accent-ink grid place-items-center hover:brightness-110 disabled:opacity-30"
+                      className="h-10 w-10 rounded-lg bg-primary text-primary-foreground grid place-items-center hover:brightness-110 disabled:opacity-30"
                       aria-label={`Agregar una ${p.name}`}
                     >
                       <Plus size={16} />
@@ -305,13 +305,13 @@ export default function NewSalePage() {
                   onClick={() => add(p.id)}
                   className={cx(
                     "relative text-left rounded-xl border p-3.5 min-h-[88px] flex flex-col justify-between transition-colors active:scale-[0.98]",
-                    qty ? "border-accent/60 bg-accent/[0.06]" : "border-line bg-surface hover:border-muted",
+                    qty ? "border-primary/60 bg-primary/[0.06]" : "border-line bg-surface hover:border-muted-foreground",
                   )}
                 >
                   <span className="text-sm font-medium leading-snug pr-6">{p.name}</span>
                   <span className="text-sm text-ink-2 tabular mt-2">{bs(p.price)}</span>
                   {qty > 0 && (
-                    <span className="absolute top-2.5 right-2.5 min-w-6 h-6 px-1.5 rounded-full bg-accent text-accent-ink text-xs font-semibold grid place-items-center tabular">
+                    <span className="absolute top-2.5 right-2.5 min-w-6 h-6 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold grid place-items-center tabular">
                       {qty}
                     </span>
                   )}
@@ -341,7 +341,6 @@ export default function NewSalePage() {
       </Modal>
 
       <DoorLookup open={lookupOpen} onClose={() => setLookupOpen(false)} />
-      {toast && <Toast message={toast.msg} kind={toast.kind} onDone={() => setToast(null)} />}
     </div>
   );
 }
@@ -491,7 +490,7 @@ function Checkout({
         <h2 className="font-semibold flex items-center gap-2">
           <Step n={1} /> Productos
         </h2>
-        <button onClick={onClear} className="text-xs text-muted hover:text-bad inline-flex items-center gap-1">
+        <button onClick={onClear} className="text-xs text-muted-foreground hover:text-bad inline-flex items-center gap-1">
           <Trash2 size={14} /> Vaciar
         </button>
       </div>
@@ -500,10 +499,10 @@ function Checkout({
           <li key={product.id} className="flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm truncate flex items-center gap-1.5">
-                {product.type === "entrada" && <Ticket size={13} className="text-accent shrink-0" />}
+                {product.type === "entrada" && <Ticket size={13} className="text-primary shrink-0" />}
                 {product.name}
               </p>
-              <p className="text-xs text-muted tabular">{priceOf(product) === 0 ? "Gratis" : bs(priceOf(product))}</p>
+              <p className="text-xs text-muted-foreground tabular">{priceOf(product) === 0 ? "Gratis" : bs(priceOf(product))}</p>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => onAdd(product.id, -1)} className="h-7 w-7 rounded-md border border-line grid place-items-center text-ink-2 hover:text-ink" aria-label="Quitar uno">
@@ -524,8 +523,8 @@ function Checkout({
       </div>
 
       {presaleDay && (
-        <div className={cx("mx-5 mt-4 rounded-lg border p-3 text-sm flex gap-2", barInPresale ? "border-bad/40 bg-bad/[0.07]" : "border-accent/40 bg-accent/[0.07]")}>
-          <CalendarDays size={16} className={cx("shrink-0 mt-0.5", barInPresale ? "text-bad" : "text-accent")} />
+        <div className={cx("mx-5 mt-4 rounded-lg border p-3 text-sm flex gap-2", barInPresale ? "border-bad/40 bg-bad/[0.07]" : "border-primary/40 bg-primary/[0.07]")}>
+          <CalendarDays size={16} className={cx("shrink-0 mt-0.5", barInPresale ? "text-bad" : "text-primary")} />
           <span>
             Preventa para la noche del <span className="first-letter:uppercase inline-block font-medium">{longDay(presaleDay)}</span>.
             {barInPresale && " La preventa solo puede incluir entradas: quita los productos de barra."}
@@ -538,9 +537,9 @@ function Checkout({
         <div className="mx-5 mt-5 rounded-lg border border-line bg-surface-2/40 p-3.5 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium flex items-center gap-2">
-              <IdCard size={16} className="text-accent" /> Titular de la entrada
+              <IdCard size={16} className="text-primary" /> Titular de la entrada
             </p>
-            <span className="text-xs text-muted tabular">
+            <span className="text-xs text-muted-foreground tabular">
               {people} {people === 1 ? "persona" : "personas"}
             </span>
           </div>
@@ -562,9 +561,9 @@ function Checkout({
                 onChange={(e) => setGuestsText(e.target.value)}
                 rows={Math.min(Math.max(people - 1, 2), 6)}
                 placeholder={"Un nombre por línea\nOpcional: Nombre, CI"}
-                className="w-full rounded-lg bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent resize-y"
+                className="w-full rounded-lg bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-y"
               />
-              <span className="block text-xs text-muted mt-1 tabular">
+              <span className="block text-xs text-muted-foreground mt-1 tabular">
                 {guests.length} de {people - 1} acompañantes{guests.length > people - 1 ? " · hay más nombres que lugares" : ""}
               </span>
             </label>
@@ -589,10 +588,10 @@ function Checkout({
                 onClick={() => setMethod(m.id)}
                 className={cx(
                   "h-14 rounded-lg border flex flex-col items-center justify-center gap-1 text-xs transition-colors",
-                  method === m.id ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                  method === m.id ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
                 )}
               >
-                <m.icon size={18} className={method === m.id ? "text-accent" : ""} />
+                <m.icon size={18} className={method === m.id ? "text-primary" : ""} />
                 {m.label}
               </button>
             ))}
@@ -622,11 +621,11 @@ function Checkout({
               ) : (
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border border-dashed border-line hover:border-muted py-5 flex flex-col items-center gap-1.5 text-ink-2"
+                  className="w-full rounded-lg border border-dashed border-line hover:border-muted-foreground py-5 flex flex-col items-center gap-1.5 text-ink-2"
                 >
                   <ImagePlus size={20} />
                   <span className="text-sm">Subir captura de WhatsApp</span>
-                  <span className="text-xs text-muted">o pega con Ctrl+V</span>
+                  <span className="text-xs text-muted-foreground">o pega con Ctrl+V</span>
                 </button>
               )}
               <input
@@ -703,7 +702,7 @@ function Step({ n, invert }: { n: number; invert?: boolean }) {
     <span
       className={cx(
         "inline-grid place-items-center h-[18px] w-[18px] rounded-full text-[10px] font-semibold shrink-0",
-        invert ? "bg-accent-ink text-accent" : "bg-accent/15 text-accent",
+        invert ? "bg-primary-foreground text-primary" : "bg-primary/15 text-primary",
       )}
     >
       {n}

@@ -6,7 +6,7 @@ import { addDays, bs, businessDay } from "@/lib/format";
 import type { Product, Sale } from "@/lib/types";
 import { costSummary, peopleByNight, planRows, presaleSold, promoterRows, topProducts } from "@/lib/analytics";
 import { CostCard, PlansTable, PromotersTable, TopProducts } from "@/components/Analytics";
-import { Card, Input, Label, PageHeader, Spinner, cx } from "@/components/ui";
+import { Card, Input, Label, PageHeader, Spinner, cx } from "@/components/primitives";
 
 const RANGES = [
   { label: "7 días", days: 7 },
@@ -80,7 +80,7 @@ export default function ReportsPage() {
                 }}
                 className={cx(
                   "h-10 px-3 rounded-lg border text-sm",
-                  from === f && to === today ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                  from === f && to === today ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
                 )}
               >
                 {x.label}
@@ -107,12 +107,12 @@ export default function ReportsPage() {
           <Card className="p-5">
             <h2 className="font-semibold mb-4">Personas por noche y plan</h2>
             {r.grid.days.length === 0 ? (
-              <p className="text-sm text-muted py-4 text-center">Sin entradas en el período.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">Sin entradas en el período.</p>
             ) : (
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-sm" style={{ minWidth: 200 + r.grid.plans.length * 120 }}>
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted">
+                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                       <th className="text-left font-medium pb-2">Noche</th>
                       {r.grid.plans.map((p) => (
                         <th key={p.id} className="text-right font-medium pb-2">
@@ -130,7 +130,7 @@ export default function ReportsPage() {
                         <tr key={d}>
                           <td className="py-2.5 tabular whitespace-nowrap">{d}</td>
                           {r.grid.plans.map((p) => (
-                            <td key={p.id} className={cx("py-2.5 text-right tabular", row[p.id] ? "" : "text-muted")}>
+                            <td key={p.id} className={cx("py-2.5 text-right tabular", row[p.id] ? "" : "text-muted-foreground")}>
                               {row[p.id] ?? "—"}
                             </td>
                           ))}
@@ -159,7 +159,7 @@ export default function ReportsPage() {
 function Kpi({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-xl md:text-2xl font-semibold tabular mt-1">{value}</p>
       {hint && <p className="text-xs text-ink-2 mt-0.5">{hint}</p>}
     </Card>

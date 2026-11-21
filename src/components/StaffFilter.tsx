@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getApi } from "@/lib/data";
 import type { Profile } from "@/lib/types";
-import { Label, Select } from "./ui";
+import { Label, Select } from "./primitives";
 
 /** Dropdown of team members (admin only). value = profile id, "" = everyone. */
 export function StaffFilter({ value, onChange, label = "Personal" }: { value: string; onChange: (id: string) => void; label?: string }) {

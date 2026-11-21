@@ -5,7 +5,7 @@ import { IdCard, Search, Users } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { bs, time } from "@/lib/format";
 import type { Reservation } from "@/lib/types";
-import { Input, Modal, Spinner, StatusBadge, cx } from "./ui";
+import { Input, Modal, Spinner, StatusBadge, cx } from "./primitives";
 
 /** Door check: find tonight's entry sales by buyer name, CI or guest name. */
 export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -43,12 +43,12 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <Modal open={open} onClose={onClose} title="Verificar reserva" wide>
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre, apellido o CI" className="pl-9 h-11" />
       </div>
 
       {q.trim().length < 2 ? (
-        <p className="text-sm text-muted text-center py-8">Escribe al menos 2 letras o números. Busca al titular, su CI o cualquier acompañante de esta noche.</p>
+        <p className="text-sm text-muted-foreground text-center py-8">Escribe al menos 2 letras o números. Busca al titular, su CI o cualquier acompañante de esta noche.</p>
       ) : loading && !results ? (
         <div className="py-10 grid place-items-center">
           <Spinner />
@@ -56,7 +56,7 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
       ) : results && results.length === 0 ? (
         <p className="text-sm text-center py-8">
           <span className="text-bad font-medium">Sin coincidencias esta noche.</span>
-          <span className="block text-muted mt-1">Revisa la ortografía o pide el CI del titular.</span>
+          <span className="block text-muted-foreground mt-1">Revisa la ortografía o pide el CI del titular.</span>
         </p>
       ) : (
         <ul className="space-y-3">
@@ -66,20 +66,20 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
               <li key={r.sale_id} className={cx("rounded-xl border p-4", ok ? "border-ok/40" : "border-bad/40")}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className={cx("font-semibold", hit(r.customer_name) && "text-accent")}>{r.customer_name ?? "Sin nombre"}</p>
-                    <p className={cx("text-sm flex items-center gap-1.5", hit(r.customer_ci) ? "text-accent" : "text-ink-2")}>
+                    <p className={cx("font-semibold", hit(r.customer_name) && "text-primary")}>{r.customer_name ?? "Sin nombre"}</p>
+                    <p className={cx("text-sm flex items-center gap-1.5", hit(r.customer_ci) ? "text-primary" : "text-ink-2")}>
                       <IdCard size={14} /> CI {r.customer_ci ?? "—"}
                     </p>
                   </div>
                   <div className="text-right">
                     {r.sale_status === "void" && <StatusBadge status="void" />}
-                    <p className="text-xs text-muted mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {time(r.created_at)} · {r.sold_by ?? "—"}
                     </p>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                  {r.is_presale && <span className="rounded-md bg-accent/12 text-accent px-2 py-0.5 text-xs font-medium">Preventa</span>}
+                  {r.is_presale && <span className="rounded-md bg-primary/12 text-primary px-2 py-0.5 text-xs font-medium">Preventa</span>}
                   <span>{r.entries}</span>
                   <span className="text-ink-2 flex items-center gap-1">
                     <Users size={14} /> {r.people} {r.people === 1 ? "persona" : "personas"}
@@ -89,12 +89,12 @@ export function DoorLookup({ open, onClose }: { open: boolean; onClose: () => vo
                 </div>
                 {r.guests.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-line">
-                    <p className="text-xs uppercase tracking-wide text-muted mb-1.5">Acompañantes</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">Acompañantes</p>
                     <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">
                       {r.guests.map((g, i) => (
-                        <li key={i} className={cx(hit(g.full_name) || hit(g.ci) ? "text-accent font-medium" : "text-ink-2")}>
+                        <li key={i} className={cx(hit(g.full_name) || hit(g.ci) ? "text-primary font-medium" : "text-ink-2")}>
                           {g.full_name}
-                          {g.ci && <span className="text-muted"> · CI {g.ci}</span>}
+                          {g.ci && <span className="text-muted-foreground"> · CI {g.ci}</span>}
                         </li>
                       ))}
                     </ul>

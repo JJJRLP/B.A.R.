@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { Check, ExternalLink, X } from "lucide-react";
 import { getApi } from "@/lib/data";
+import { toast } from "sonner";
 import { bs, dateTime } from "@/lib/format";
 import type { Payment, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
-import { Button, Input, Label, Modal, Spinner } from "./ui";
+import { Button, Input, Label, Modal, Spinner } from "./primitives";
 
 export function ProofImage({ path, className }: { path: string; className?: string }) {
   const [url, setUrl] = useState<string | null>(null);
@@ -51,7 +52,7 @@ export function VerifyActions({ payment, onDone }: { payment: Payment; onDone: (
       await getApi().setPaymentStatus(payment.id, status, reason);
       onDone();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      toast.error(e instanceof Error ? e.message : "Error");
     } finally {
       setBusy(false);
     }
@@ -85,7 +86,7 @@ export function VerifyActions({ payment, onDone }: { payment: Payment; onDone: (
 /** Who did what to this sale, in order. */
 function History({ sale }: { sale: Sale }) {
   const steps: { at: string; who: string; what: string; tone: string }[] = [
-    { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-accent" },
+    { at: sale.created_at, who: sale.created_by_name ?? "—", what: `registró la venta por ${bs(sale.total)}`, tone: "bg-primary" },
   ];
   if (sale.status === "void")
     steps.push({ at: sale.voided_at ?? "", who: sale.voided_by_name ?? "—", what: `anuló la venta${sale.void_reason ? `: “${sale.void_reason}”` : ""}`, tone: "bg-bad" });
@@ -101,7 +102,7 @@ function History({ sale }: { sale: Sale }) {
               {s.who && <span className="font-medium">{s.who} </span>}
               <span className={s.who ? "text-ink-2" : "text-warn"}>{s.what}</span>
             </p>
-            {s.at && <p className="text-xs text-muted tabular">{dateTime(s.at)}</p>}
+            {s.at && <p className="text-xs text-muted-foreground tabular">{dateTime(s.at)}</p>}
           </li>
         ))}
       </ol>
@@ -125,7 +126,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
       onChanged();
       onClose();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Error");
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   };
 
@@ -139,23 +140,23 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
             {sale.promoter_code && <span>Relacionador: <span className="text-ink font-mono">{sale.promoter_code}</span></span>}
           </div>
           {sale.is_presale && sale.event_day && (
-            <p className="text-sm rounded-lg border border-accent/40 bg-accent/[0.07] px-3 py-2">
+            <p className="text-sm rounded-lg border border-primary/40 bg-primary/[0.07] px-3 py-2">
               Preventa para la noche del <span className="font-medium">{sale.event_day}</span>
             </p>
           )}
           {(sale.customer_name || sale.customer_ci) && (
             <div className="rounded-lg border border-line bg-surface-2/40 p-3 text-sm">
-              <p className="text-xs uppercase tracking-wide text-muted mb-1">Titular</p>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Titular</p>
               <p className="font-medium">{sale.customer_name ?? "—"}</p>
               <p className="text-ink-2">CI {sale.customer_ci ?? "—"}</p>
               {sale.guests && sale.guests.length > 0 && (
                 <>
-                  <p className="text-xs uppercase tracking-wide text-muted mt-3 mb-1">Acompañantes ({sale.guests.length})</p>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground mt-3 mb-1">Acompañantes ({sale.guests.length})</p>
                   <ul className="space-y-0.5 text-ink-2">
                     {sale.guests.map((g, i) => (
                       <li key={i}>
                         {g.full_name}
-                        {g.ci && <span className="text-muted"> · CI {g.ci}</span>}
+                        {g.ci && <span className="text-muted-foreground"> · CI {g.ci}</span>}
                       </li>
                     ))}
                   </ul>
@@ -196,7 +197,7 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
                   <ProofImage path={p.proof_path} />
                 </div>
               ) : (
-                p.method === "qr" && <p className="text-sm text-muted">Sin comprobante adjunto.</p>
+                p.method === "qr" && <p className="text-sm text-muted-foreground">Sin comprobante adjunto.</p>
               )}
             </div>
           ))}

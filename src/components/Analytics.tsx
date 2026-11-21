@@ -2,9 +2,9 @@
 
 import { bs } from "@/lib/format";
 import type { CostSummary, PlanRow, ProductRow, PromoterRow } from "@/lib/analytics";
-import { Card, cx } from "./ui";
+import { Card, cx } from "./primitives";
 
-const th = "text-xs uppercase tracking-wide text-muted font-medium pb-2";
+const th = "text-xs uppercase tracking-wide text-muted-foreground font-medium pb-2";
 
 /** Entry plans: units sold, people (entradas incluidas), presale, amount and limit status. */
 export function PlansTable({ rows, title = "Planes de la noche" }: { rows: PlanRow[]; title?: string }) {
@@ -18,7 +18,7 @@ export function PlansTable({ rows, title = "Planes de la noche" }: { rows: PlanR
         </span>
       </div>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted py-4 text-center">Sin entradas vendidas.</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">Sin entradas vendidas.</p>
       ) : (
         <div className="overflow-x-auto -mx-5 px-5">
           <table className="w-full text-sm min-w-[560px]">
@@ -64,22 +64,22 @@ export function TopProducts({ rows, limit = 8 }: { rows: ProductRow[]; limit?: n
     <Card className="p-5">
       <h2 className="font-semibold mb-4">Más vendidos en barra</h2>
       {top.length === 0 ? (
-        <p className="text-sm text-muted py-4 text-center">Sin ventas de barra.</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">Sin ventas de barra.</p>
       ) : (
         <ol className="space-y-3">
           {top.map((r, i) => (
             <li key={r.product_id} className="text-sm">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="truncate">
-                  <span className="text-muted tabular mr-2">{i + 1}.</span>
+                  <span className="text-muted-foreground tabular mr-2">{i + 1}.</span>
                   {r.name}
                 </span>
                 <span className="tabular shrink-0">
-                  <span className="font-semibold">{r.qty}</span> <span className="text-muted">· {bs(r.amount)}</span>
+                  <span className="font-semibold">{r.qty}</span> <span className="text-muted-foreground">· {bs(r.amount)}</span>
                 </span>
               </div>
               <div className="mt-1.5 h-1.5 rounded-full bg-surface-2 overflow-hidden">
-                <div className="h-full rounded-full bg-accent" style={{ width: `${(r.qty / max) * 100}%` }} />
+                <div className="h-full rounded-full bg-primary" style={{ width: `${(r.qty / max) * 100}%` }} />
               </div>
             </li>
           ))}
@@ -95,7 +95,7 @@ export function PromotersTable({ rows }: { rows: PromoterRow[] }) {
     <Card className="p-5">
       <h2 className="font-semibold mb-4">Relacionadores</h2>
       {rows.length === 0 ? (
-        <p className="text-sm text-muted py-4 text-center">Ninguna venta con código de relacionador.</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">Ninguna venta con código de relacionador.</p>
       ) : (
         <table className="w-full text-sm">
           <thead>
@@ -131,15 +131,15 @@ export function CostCard({ summary, products }: { summary: CostSummary; products
       <h2 className="font-semibold mb-4">Costos y margen</h2>
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">Ventas con costo</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Ventas con costo</p>
           <p className="text-lg font-semibold tabular">{bs(summary.costedRevenue)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">Costo</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Costo</p>
           <p className="text-lg font-semibold tabular">{bs(summary.cost)}</p>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">Margen</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Margen</p>
           <p className={cx("text-lg font-semibold tabular", summary.margin >= 0 ? "text-ok" : "text-bad")}>
             {bs(summary.margin)}
             {pct != null && <span className="text-sm text-ink-2 font-normal"> · {pct}%</span>}
@@ -169,7 +169,7 @@ export function CostCard({ summary, products }: { summary: CostSummary; products
         </table>
       )}
       {summary.uncostedItems > 0 && (
-        <p className="text-xs text-muted mt-3">
+        <p className="text-xs text-muted-foreground mt-3">
           {summary.uncostedItems} {summary.uncostedItems === 1 ? "línea vendida no tiene" : "líneas vendidas no tienen"} costo registrado y no entran en el margen. Agrega el costo en Productos.
         </p>
       )}

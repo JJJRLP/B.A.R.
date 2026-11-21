@@ -10,7 +10,7 @@ import type { PaymentMethod, Product, ProductType, Sale } from "@/lib/types";
 import { costSummary, planRows, presaleSold, promoterRows, topProducts } from "@/lib/analytics";
 import { CostCard, PlansTable, PromotersTable, TopProducts } from "@/components/Analytics";
 import { METHOD_LABEL } from "@/lib/types";
-import { Button, Card, Input, Label, PageHeader, Spinner, cx } from "@/components/ui";
+import { Button, Card, Input, Label, PageHeader, Spinner, cx } from "@/components/primitives";
 
 const METHODS: PaymentMethod[] = ["qr", "cash", "card"];
 
@@ -144,14 +144,14 @@ export default function ClosePage() {
             <Card className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted flex items-center gap-1.5">
-                    <Ticket size={14} className="text-accent" /> Puerta · Entradas
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+                    <Ticket size={14} className="text-primary" /> Puerta · Entradas
                   </p>
                   <p className="text-2xl font-semibold tabular mt-1">{bs(s.entryAmount)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-semibold tabular">{a.nightPeople}</p>
-                  <p className="text-xs text-muted">{a.nightPeople === 1 ? "persona esta noche" : "personas esta noche"}</p>
+                  <p className="text-xs text-muted-foreground">{a.nightPeople === 1 ? "persona esta noche" : "personas esta noche"}</p>
                 </div>
               </div>
               <p className="text-xs text-ink-2 mt-3">
@@ -161,7 +161,7 @@ export default function ClosePage() {
               </p>
             </Card>
             <Card className="p-5">
-              <p className="text-xs uppercase tracking-wide text-muted flex items-center gap-1.5">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
                 <GlassWater size={14} /> Barra · Consumo
               </p>
               <p className="text-2xl font-semibold tabular mt-1">{bs(s.barAmount)}</p>
@@ -181,17 +181,17 @@ export default function ClosePage() {
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Por personal</h2>
-              <Link href="/actividad" className="text-sm text-accent hover:underline">
+              <Link href="/actividad" className="text-sm text-primary hover:underline">
                 Ver registro de actividad →
               </Link>
             </div>
             {s.byStaff.length === 0 ? (
-              <p className="text-sm text-muted py-4 text-center">Sin ventas este día.</p>
+              <p className="text-sm text-muted-foreground py-4 text-center">Sin ventas este día.</p>
             ) : (
               <div className="overflow-x-auto -mx-5 px-5">
                 <table className="w-full text-sm min-w-[560px]">
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted">
+                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                       <th className="text-left font-medium pb-2">Persona</th>
                       <th className="text-right font-medium pb-2">Ventas</th>
                       <th className="text-right font-medium pb-2">Efectivo</th>
@@ -209,7 +209,7 @@ export default function ClosePage() {
                         <td className="py-2.5 text-right tabular">{bs(r.cash)}</td>
                         <td className="py-2.5 text-right tabular">{bs(r.qr)}</td>
                         <td className="py-2.5 text-right tabular">{bs(r.card)}</td>
-                        <td className={cx("py-2.5 text-right tabular", r.voided ? "text-bad" : "text-muted")}>{r.voided}</td>
+                        <td className={cx("py-2.5 text-right tabular", r.voided ? "text-bad" : "text-muted-foreground")}>{r.voided}</td>
                         <td className="py-2.5 text-right tabular font-semibold">{bs(r.total)}</td>
                       </tr>
                     ))}
@@ -225,7 +225,7 @@ export default function ClosePage() {
               <h2 className="font-semibold mb-4">Por método de pago</h2>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs uppercase tracking-wide text-muted">
+                  <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                     <th className="text-left font-medium pb-2">Método</th>
                     <th className="text-right font-medium pb-2">Pagos</th>
                     <th className="text-right font-medium pb-2">Monto</th>
@@ -250,13 +250,13 @@ export default function ClosePage() {
                     <Input type="number" inputMode="decimal" step="0.01" value={cashCount} onChange={(e) => setCashCount(e.target.value)} placeholder={s.byMethod.cash.amount.toFixed(2)} className="tabular" />
                   </label>
                   <div className="text-right pb-2 min-w-28">
-                    <p className="text-xs text-muted">Diferencia</p>
-                    <p className={cx("font-semibold tabular", cashDiff === null ? "text-muted" : Math.abs(cashDiff) < 0.01 ? "text-ok" : "text-bad")}>
+                    <p className="text-xs text-muted-foreground">Diferencia</p>
+                    <p className={cx("font-semibold tabular", cashDiff === null ? "text-muted-foreground" : Math.abs(cashDiff) < 0.01 ? "text-ok" : "text-bad")}>
                       {cashDiff === null ? "—" : `${cashDiff > 0 ? "+" : ""}${bs(cashDiff)}`}
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-muted mt-2">Esperado según el sistema: {bs(s.byMethod.cash.amount)}</p>
+                <p className="text-xs text-muted-foreground mt-2">Esperado según el sistema: {bs(s.byMethod.cash.amount)}</p>
               </div>
             </Card>
 
@@ -274,11 +274,11 @@ export default function ClosePage() {
                 </div>
               </div>
               {s.products.length === 0 ? (
-                <p className="text-sm text-muted py-6 text-center">Sin ventas este día.</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">Sin ventas este día.</p>
               ) : (
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-xs uppercase tracking-wide text-muted">
+                    <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                       <th className="text-left font-medium pb-2">Producto</th>
                       <th className="text-right font-medium pb-2">Cant.</th>
                       <th className="text-right font-medium pb-2">Monto</th>
@@ -294,7 +294,7 @@ export default function ClosePage() {
                     .map((g) => (
                       <tbody key={g.label} className="divide-y divide-line">
                         <tr>
-                          <td colSpan={3} className="pt-4 pb-1.5 text-xs uppercase tracking-wide text-accent">
+                          <td colSpan={3} className="pt-4 pb-1.5 text-xs uppercase tracking-wide text-primary">
                             {g.label}
                           </td>
                         </tr>
@@ -332,7 +332,7 @@ export default function ClosePage() {
 function Kpi({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "ok" | "warn" | "bad" }) {
   return (
     <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-muted">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={cx("text-xl md:text-2xl font-semibold tabular mt-1", tone === "ok" && "text-ok", tone === "warn" && "text-warn", tone === "bad" && "text-bad")}>{value}</p>
       {hint && <p className="text-xs text-ink-2 mt-0.5">{hint}</p>}
     </Card>

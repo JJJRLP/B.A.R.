@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getApi } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
-import { Button, Input, Label } from "@/components/ui";
+import { Button, Input, Label } from "@/components/primitives";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function LoginPage() {
     <div className="min-h-dvh grid place-items-center px-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8">
-          <div className="h-10 w-10 rounded-xl bg-accent text-accent-ink grid place-items-center text-lg font-bold">B</div>
+          <div className="h-10 w-10 rounded-xl bg-primary text-primary-foreground grid place-items-center text-lg font-bold">B</div>
           <div>
             <h1 className="text-lg font-semibold leading-tight">Barra</h1>
             <p className="text-sm text-ink-2">Registro de ventas y pagos</p>

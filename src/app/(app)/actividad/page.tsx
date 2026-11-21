@@ -7,12 +7,12 @@ import { addDays, bs, businessDay, dateTime, longDay, time } from "@/lib/format"
 import { ACTIVITY_LABEL, buildActivity, type ActivityEvent, type ActivityKind } from "@/lib/activity";
 import { downloadCsv } from "@/lib/csv";
 import type { Sale } from "@/lib/types";
-import { Button, Card, Empty, Input, Label, PageHeader, Select, Spinner, cx } from "@/components/ui";
+import { Button, Card, Empty, Input, Label, PageHeader, Select, Spinner, cx } from "@/components/primitives";
 import { StaffFilter } from "@/components/StaffFilter";
 import { SaleDetail } from "@/components/SaleDetail";
 
 const KIND_STYLE: Record<ActivityKind, { icon: typeof ShoppingBag; cls: string }> = {
-  sale: { icon: ShoppingBag, cls: "text-accent bg-accent/10" },
+  sale: { icon: ShoppingBag, cls: "text-primary bg-primary/10" },
   void: { icon: Ban, cls: "text-bad bg-bad/10" },
 };
 
@@ -101,7 +101,7 @@ export default function ActivityPage() {
             <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-surface-2/60">
-                <tr className="text-xs uppercase tracking-wide text-muted">
+                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="text-left font-medium px-4 py-2.5 w-32">{multiDay ? "Fecha" : "Hora"}</th>
                   <th className="text-left font-medium px-4 py-2.5 w-40">Persona</th>
                   <th className="text-left font-medium px-4 py-2.5 w-44">Acción</th>
@@ -140,7 +140,7 @@ export default function ActivityPage() {
                         </p>
                         <span className="text-sm tabular font-medium shrink-0">{bs(e.amount)}</span>
                       </div>
-                      <p className="text-xs text-muted truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {multiDay ? dateTime(e.at) : time(e.at)} · {e.detail}
                       </p>
                     </div>

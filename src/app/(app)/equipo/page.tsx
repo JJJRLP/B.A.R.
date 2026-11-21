@@ -5,7 +5,7 @@ import { getApi } from "@/lib/data";
 import { resetDemo } from "@/lib/data/demo";
 import { useAuth } from "@/lib/auth";
 import type { Profile, Role } from "@/lib/types";
-import { Button, Card, PageHeader, Select, Spinner, cx } from "@/components/ui";
+import { Button, Card, PageHeader, Select, Spinner, cx } from "@/components/primitives";
 
 export default function TeamPage() {
   const { profile: me } = useAuth();
@@ -38,9 +38,9 @@ export default function TeamPage() {
               <div key={p.id} className={cx("flex flex-wrap items-center gap-3 px-4 py-3", !p.active && "opacity-50")}>
                 <div className="flex-1 min-w-40">
                   <p className="text-sm">
-                    {p.full_name || "Sin nombre"} {self && <span className="text-xs text-muted">(tú)</span>}
+                    {p.full_name || "Sin nombre"} {self && <span className="text-xs text-muted-foreground">(tú)</span>}
                   </p>
-                  {p.email && <p className="text-xs text-muted">{p.email}</p>}
+                  {p.email && <p className="text-xs text-muted-foreground">{p.email}</p>}
                 </div>
                 <Select value={p.role} disabled={self} onChange={(e) => update(p.id, { role: e.target.value as Role })} className="h-8">
                   <option value="staff">Personal</option>

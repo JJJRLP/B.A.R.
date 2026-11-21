@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/AppShell";
-import { Spinner } from "@/components/ui";
+import { Spinner } from "@/components/primitives";
 
 const ADMIN_ONLY = ["/cierre", "/actividad", "/reportes", "/productos", "/equipo"];
 

@@ -20,12 +20,12 @@ export function Button({
       {...props}
       className={cx(
         "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors select-none",
-        "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
+        "disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
         size === "sm" && "h-8 px-3 text-sm",
         size === "md" && "h-10 px-4 text-sm",
         size === "lg" && "h-12 px-5 text-base",
-        variant === "primary" && "bg-accent text-accent-ink hover:brightness-110",
-        variant === "secondary" && "bg-surface-2 text-ink border border-line hover:border-muted",
+        variant === "primary" && "bg-primary text-primary-foreground hover:brightness-110",
+        variant === "secondary" && "bg-surface-2 text-ink border border-line hover:border-muted-foreground",
         variant === "ghost" && "text-ink-2 hover:text-ink hover:bg-surface-2",
         variant === "danger" && "bg-bad/15 text-bad border border-bad/30 hover:bg-bad/25",
         variant === "ok" && "bg-ok/15 text-ok border border-ok/30 hover:bg-ok/25",
@@ -40,8 +40,8 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
     <input
       {...props}
       className={cx(
-        "h-10 w-full rounded-lg bg-surface-2 border border-line px-3 text-sm text-ink placeholder:text-muted",
-        "focus:outline-none focus:border-accent",
+        "h-10 w-full rounded-lg bg-surface-2 border border-line px-3 text-sm text-ink placeholder:text-muted-foreground",
+        "focus:outline-none focus:border-primary",
         className,
       )}
     />
@@ -53,7 +53,7 @@ export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLS
     <select
       {...props}
       className={cx(
-        "h-10 rounded-lg bg-surface-2 border border-line px-3 text-sm text-ink focus:outline-none focus:border-accent",
+        "h-10 rounded-lg bg-surface-2 border border-line px-3 text-sm text-ink focus:outline-none focus:border-primary",
         className,
       )}
     />
@@ -61,7 +61,7 @@ export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLS
 }
 
 export function Label({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <span className={cx("block text-xs font-medium uppercase tracking-wide text-muted mb-1.5", className)}>{children}</span>;
+  return <span className={cx("block text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5", className)}>{children}</span>;
 }
 
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
@@ -73,7 +73,7 @@ export function StatusBadge({ status }: { status: PaymentStatus | "void" }) {
     pending: "bg-warn/15 text-warn border-warn/30",
     verified: "bg-ok/15 text-ok border-ok/30",
     rejected: "bg-bad/15 text-bad border-bad/30",
-    void: "bg-surface-2 text-muted border-line",
+    void: "bg-surface-2 text-muted-foreground border-line",
   };
   return (
     <span className={cx("inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium", styles[status])}>
@@ -97,7 +97,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 export function Empty({ icon, title, hint }: { icon?: React.ReactNode; title: string; hint?: string }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-14 px-4 text-ink-2">
-      {icon && <div className="mb-3 text-muted">{icon}</div>}
+      {icon && <div className="mb-3 text-muted-foreground">{icon}</div>}
       <p className="font-medium text-ink">{title}</p>
       {hint && <p className="text-sm mt-1 max-w-sm">{hint}</p>}
     </div>
@@ -137,7 +137,7 @@ export function Modal({
       >
         <div className="sticky top-0 bg-surface flex items-center justify-between px-5 py-4 border-b border-line">
           <h2 className="font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-muted hover:text-ink" aria-label="Cerrar">
+          <button onClick={onClose} className="text-muted-foreground hover:text-ink" aria-label="Cerrar">
             <X size={18} />
           </button>
         </div>
@@ -147,25 +147,6 @@ export function Modal({
   );
 }
 
-export function Toast({ message, kind = "ok", onDone }: { message: string; kind?: "ok" | "bad"; onDone: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2600);
-    return () => clearTimeout(t);
-  }, [onDone]);
-  return (
-    <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[60]">
-      <div
-        className={cx(
-          "rounded-lg px-4 py-2.5 text-sm font-medium shadow-lg border",
-          kind === "ok" ? "bg-surface-2 text-ink border-ok/40" : "bg-surface-2 text-bad border-bad/40",
-        )}
-      >
-        {message}
-      </div>
-    </div>
-  );
-}
-
 export function Spinner() {
-  return <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />;
+  return <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-primary" />;
 }

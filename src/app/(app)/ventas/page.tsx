@@ -8,7 +8,7 @@ import { bs, businessDay, dateTime, time, longDay } from "@/lib/format";
 import { exportSalesCsv } from "@/lib/csv";
 import type { PaymentMethod, Sale } from "@/lib/types";
 import { METHOD_LABEL } from "@/lib/types";
-import { Button, Card, Empty, Input, Label, PageHeader, Select, Spinner, StatusBadge, cx } from "@/components/ui";
+import { Button, Card, Empty, Input, Label, PageHeader, Select, Spinner, StatusBadge, cx } from "@/components/primitives";
 import { SaleDetail } from "@/components/SaleDetail";
 import { StaffFilter } from "@/components/StaffFilter";
 
@@ -65,7 +65,7 @@ export default function SalesPage() {
       />
 
       <div className="relative mb-3 max-w-md">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar titular, acompañante o CI" className="pl-9" />
       </div>
 
@@ -116,7 +116,7 @@ export default function SalesPage() {
             <div className="hidden md:block overflow-x-auto">
             <table className="w-full min-w-[900px] text-sm">
               <thead className="bg-surface-2/60">
-                <tr className="text-xs uppercase tracking-wide text-muted">
+                <tr className="text-xs uppercase tracking-wide text-muted-foreground">
                   <th className="text-left font-medium px-4 py-2.5 w-28">{multiDay ? "Fecha" : "Hora"}</th>
                   {isAdmin && <th className="text-left font-medium px-4 py-2.5 w-36">Registró</th>}
                   <th className="text-left font-medium px-4 py-2.5">Productos</th>
@@ -133,13 +133,13 @@ export default function SalesPage() {
                       ? s.voided_by_name && { who: s.voided_by_name, at: s.voided_at }
                       : null;
                   return (
-                    <tr key={s.id} onClick={() => setSelected(s)} className={cx("cursor-pointer hover:bg-surface-2/60", s.status === "void" && "text-muted")}>
+                    <tr key={s.id} onClick={() => setSelected(s)} className={cx("cursor-pointer hover:bg-surface-2/60", s.status === "void" && "text-muted-foreground")}>
                       <td className="px-4 py-3 tabular text-ink-2 whitespace-nowrap">{multiDay ? dateTime(s.created_at) : time(s.created_at)}</td>
                       {isAdmin && <td className="px-4 py-3 font-medium whitespace-nowrap">{s.created_by_name ?? "—"}</td>}
                       <td className="px-4 py-3 max-w-0">
                         <p className="truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                         {(s.customer_name || s.table_label) && (
-                          <p className="text-xs text-muted flex items-center gap-1 truncate">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 truncate">
                             {s.customer_name && (
                               <>
                                 <IdCard size={12} /> {s.customer_name}
@@ -153,7 +153,7 @@ export default function SalesPage() {
                       <td className="px-4 py-3 text-ink-2">
                         <span className="inline-flex items-center gap-1.5">
                           {p ? METHOD_LABEL[p.method] : "—"}
-                          {p?.proof_path && <ImageIcon size={13} className="text-muted" aria-label="Con comprobante" />}
+                          {p?.proof_path && <ImageIcon size={13} className="text-muted-foreground" aria-label="Con comprobante" />}
                         </span>
                       </td>
                       <td className={cx("px-4 py-3 text-right tabular font-medium", s.status === "void" && "line-through")}>{bs(s.total)}</td>
@@ -162,10 +162,10 @@ export default function SalesPage() {
                           {checker ? (
                             <>
                               <p className="text-ink">{checker.who}</p>
-                              {checker.at && <p className="text-muted tabular">{dateTime(checker.at)}</p>}
+                              {checker.at && <p className="text-muted-foreground tabular">{dateTime(checker.at)}</p>}
                             </>
                           ) : (
-                            <span className="text-muted">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                       )}
@@ -186,7 +186,7 @@ export default function SalesPage() {
                       <span className="w-11 text-sm text-ink-2 tabular shrink-0">{time(s.created_at)}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
-                        <p className="text-xs text-muted truncate">
+                        <p className="text-xs text-muted-foreground truncate">
                           {s.customer_name ? `${s.customer_name} · ` : ""}
                           {isAdmin && s.created_by_name ? `${s.created_by_name} · ` : ""}
                           {p ? METHOD_LABEL[p.method] : "—"}

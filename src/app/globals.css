@@ -1,36 +1,97 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 /*
-  Palette: black base, off-white text, blue accent.
-  accent = actions and selection · ok = verified · warn = pending / needs attention · bad = rejected / voided.
-  To try another accent, change only --color-accent (and --color-accent-ink for text on it).
+  Theme tokens in shadcn/ui format. The app is dark-only for now.
+  primary     = actions and selection (brand blue)
+  success     = paid / good · warning = needs attention · destructive = voided / errors
+  muted-foreground = secondary text · secondary / accent / muted = quiet surfaces
+  App aliases (bg, surface, surface-2, line, ink, ink-2, ok, warn, bad) point at the same values.
 */
-@theme {
-  --color-bg: #0a0a0b;
-  --color-surface: #131316;
-  --color-surface-2: #1b1b1f;
-  --color-line: #2a2a30;
-  --color-ink: #f2f0eb;
-  --color-ink-2: #b5b3ad;
-  --color-muted: #7a7973;
-  --color-accent: #4f8cff;
-  --color-accent-ink: #ffffff;
-  --color-ok: #4cc38a;
-  --color-warn: #f0a63c;
-  --color-bad: #ef6464;
+:root {
+  --radius: 0.75rem;
+
+  --background: #0a0a0b;
+  --foreground: #f2f0eb;
+  --card: #131316;
+  --card-foreground: #f2f0eb;
+  --popover: #131316;
+  --popover-foreground: #f2f0eb;
+  --primary: #4f8cff;
+  --primary-foreground: #ffffff;
+  --secondary: #1b1b1f;
+  --secondary-foreground: #f2f0eb;
+  --muted: #1b1b1f;
+  --muted-foreground: #7a7973;
+  --accent: #1b1b1f;
+  --accent-foreground: #f2f0eb;
+  --destructive: #ef6464;
+  --border: #2a2a30;
+  --input: #2a2a30;
+  --ring: #4f8cff;
+
+  --success: #4cc38a;
+  --warning: #f0a63c;
+  --foreground-2: #b5b3ad;
+}
+
+@theme inline {
+  /* shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  /* app aliases used across the screens */
+  --color-bg: var(--background);
+  --color-surface: var(--card);
+  --color-surface-2: var(--secondary);
+  --color-line: var(--border);
+  --color-ink: var(--foreground);
+  --color-ink-2: var(--foreground-2);
+  --color-ok: var(--success);
+  --color-warn: var(--warning);
+  --color-bad: var(--destructive);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-html {
-  color-scheme: dark;
-}
-
-body {
-  background: var(--color-bg);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-tap-highlight-color: transparent;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 .tabular {
@@ -44,5 +105,5 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--primary) 35%, transparent);
 }

@@ -5,7 +5,8 @@ import { GlassWater, Package, Pencil, Plus, Ticket } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { bs } from "@/lib/format";
 import type { Product, ProductType } from "@/lib/types";
-import { Button, Card, Empty, Input, Label, Modal, PageHeader, Spinner, Toast, cx } from "@/components/ui";
+import { Button, Card, Empty, Input, Label, Modal, PageHeader, Spinner, cx } from "@/components/primitives";
+import { toast } from "sonner";
 
 type Draft = Omit<Product, "id"> & { id?: string };
 const EMPTY: Draft = { name: "", type: "consumo", category: "", price: 0, active: true, people_per_unit: 1 };
@@ -18,13 +19,12 @@ const SECTIONS: { type: ProductType; title: string; hint: string; icon: typeof T
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[] | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [toast, setToast] = useState<{ msg: string; kind: "ok" | "bad" } | null>(null);
 
   const load = useCallback(async () => {
     setProducts(await getApi().listProducts(true));
   }, []);
   useEffect(() => {
-    load().catch((e) => setToast({ msg: e.message, kind: "bad" }));
+    load().catch((e) => toast.error(e.message));
   }, [load]);
 
   const categoriesOf = useCallback(
@@ -45,14 +45,14 @@ export default function ProductsPage() {
 
   const save = async () => {
     if (!draft) return;
-    if (!draft.name.trim() || !draft.category.trim() || !(draft.price >= 0)) return setToast({ msg: "Completa nombre, categoría y precio", kind: "bad" });
+    if (!draft.name.trim() || !draft.category.trim() || !(draft.price >= 0)) return toast.error("Completa nombre, categoría y precio");
     try {
       await getApi().saveProduct({ ...draft, name: draft.name.trim(), category: draft.category.trim() });
       setDraft(null);
-      setToast({ msg: draft.type === "entrada" ? "Entrada guardada" : "Producto guardado", kind: "ok" });
+      toast.success(draft.type === "entrada" ? "Entrada guardada" : "Producto guardado");
       load();
     } catch (e) {
-      setToast({ msg: e instanceof Error ? e.message : "Error", kind: "bad" });
+      toast.error(e instanceof Error ? e.message : "Error");
     }
   };
 
@@ -75,12 +75,12 @@ export default function ProductsPage() {
             <section key={s.type}>
               <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className={cx("h-8 w-8 rounded-lg grid place-items-center", s.type === "entrada" ? "bg-accent/12 text-accent" : "bg-surface-2 text-ink-2")}>
+                  <span className={cx("h-8 w-8 rounded-lg grid place-items-center", s.type === "entrada" ? "bg-primary/12 text-primary" : "bg-surface-2 text-ink-2")}>
                     <s.icon size={17} />
                   </span>
                   <div>
                     <h2 className="font-semibold leading-tight">{s.title}</h2>
-                    <p className="text-xs text-muted">{s.hint}</p>
+                    <p className="text-xs text-muted-foreground">{s.hint}</p>
                   </div>
                 </div>
                 <Button size="sm" variant={s.type === "entrada" ? "primary" : "secondary"} onClick={() => newDraft(s.type)}>
@@ -96,7 +96,7 @@ export default function ProductsPage() {
                 <div className="space-y-4">
                   {s.groups.map(({ c, items }) => (
                     <div key={c}>
-                      {(s.groups.length > 1 || s.type === "consumo") && <h3 className="text-xs uppercase tracking-wide text-muted mb-2">{c}</h3>}
+                      {(s.groups.length > 1 || s.type === "consumo") && <h3 className="text-xs uppercase tracking-wide text-muted-foreground mb-2">{c}</h3>}
                       <Card className="divide-y divide-line">
                         {items.map((p) => (
                           <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
@@ -155,10 +155,10 @@ export default function ProductsPage() {
                     onClick={() => setDraft({ ...draft, type: s.type, category: draft.type === s.type ? draft.category : categoriesOf(s.type)[0] ?? (s.type === "entrada" ? "Entradas" : "") })}
                     className={cx(
                       "h-11 rounded-lg border flex items-center justify-center gap-2 text-sm",
-                      draft.type === s.type ? "border-accent bg-accent/10 text-ink" : "border-line text-ink-2 hover:text-ink",
+                      draft.type === s.type ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
                     )}
                   >
-                    <s.icon size={16} className={draft.type === s.type ? "text-accent" : ""} />
+                    <s.icon size={16} className={draft.type === s.type ? "text-primary" : ""} />
                     {s.type === "entrada" ? "Entrada" : "Barra"}
                   </button>
                 ))}
@@ -197,10 +197,10 @@ export default function ProductsPage() {
                 onChange={(e) => setDraft({ ...draft, cost: e.target.value === "" ? null : Number(e.target.value) })}
                 className="tabular"
               />
-              <span className="block text-xs text-muted mt-1">Se usa para calcular el costo y el margen en el cierre del día.</span>
+              <span className="block text-xs text-muted-foreground mt-1">Se usa para calcular el costo y el margen en el cierre del día.</span>
             </label>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="accent-[var(--color-accent)]" />
+              <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="accent-[var(--color-primary)]" />
               Activo (visible al vender)
             </label>
             <div className="flex justify-end gap-2 pt-2">
@@ -215,13 +215,12 @@ export default function ProductsPage() {
         )}
       </Modal>
 
-      {toast && <Toast message={toast.msg} kind={toast.kind} onDone={() => setToast(null)} />}
     </div>
   );
 }
 
 function Tag({ children }: { children: React.ReactNode }) {
-  return <span className="inline-flex rounded-md bg-accent/10 text-accent px-1.5 py-0.5 text-[11px]">{children}</span>;
+  return <span className="inline-flex rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[11px]">{children}</span>;
 }
 
 type FreeMode = "paid" | "until" | "free";
@@ -252,14 +251,14 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
               onClick={() => setMode(o.m)}
               className={cx(
                 "text-left rounded-lg border px-3 py-2 transition-colors",
-                mode === o.m ? "border-accent bg-accent/10" : "border-line hover:border-muted",
+                mode === o.m ? "border-primary bg-primary/10" : "border-line hover:border-muted-foreground",
               )}
             >
               <span className="flex items-center gap-2 text-sm">
-                <span className={cx("h-3.5 w-3.5 rounded-full border-2 shrink-0", mode === o.m ? "border-accent bg-accent" : "border-muted")} />
+                <span className={cx("h-3.5 w-3.5 rounded-full border-2 shrink-0", mode === o.m ? "border-primary bg-primary" : "border-muted-foreground")} />
                 {o.label}
               </span>
-              <span className="block pl-5.5 text-xs text-muted">{o.hint}</span>
+              <span className="block pl-5.5 text-xs text-muted-foreground">{o.hint}</span>
             </button>
           ))}
         </div>
@@ -297,7 +296,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           onChange={(e) => setDraft({ ...draft, presale_price: e.target.value === "" ? null : Number(e.target.value) })}
           className="tabular"
         />
-        <span className="block text-xs text-muted mt-1">Se cobra al vender en preventa para una noche futura.</span>
+        <span className="block text-xs text-muted-foreground mt-1">Se cobra al vender en preventa para una noche futura.</span>
       </label>
 
       <label className="block">
@@ -311,7 +310,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           onChange={(e) => setDraft({ ...draft, people_per_unit: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
           className="tabular"
         />
-        <span className="block text-xs text-muted mt-1">Personas que entran con cada unidad: 1 para una entrada individual, por ejemplo 12 para una mesa VIP.</span>
+        <span className="block text-xs text-muted-foreground mt-1">Personas que entran con cada unidad: 1 para una entrada individual, por ejemplo 12 para una mesa VIP.</span>
       </label>
 
       <label className="block">
@@ -326,7 +325,7 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           onChange={(e) => setDraft({ ...draft, max_per_night: e.target.value ? Math.max(1, Math.floor(Number(e.target.value))) : null })}
           className="tabular"
         />
-        <span className="block text-xs text-muted mt-1">Al llegar al cupo, ya no se puede vender esta entrada esa noche.</span>
+        <span className="block text-xs text-muted-foreground mt-1">Al llegar al cupo, ya no se puede vender esta entrada esa noche.</span>
       </label>
     </div>
   );
