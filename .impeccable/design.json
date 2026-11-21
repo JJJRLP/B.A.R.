@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-21T00:00:00Z",
+  "title": "Design System: DEMO",
+  "extensions": {
+    "colorMeta": {
+      "background": { "role": "neutral", "displayName": "Blacklight Ground", "tonalRamp": ["#0b0914", "#242132", "#3f3c52", "#5d5a75", "#807c9a", "#a4a1bb", "#cac8de", "#eeecfe"] },
+      "card": { "role": "neutral", "displayName": "Lifted Violet", "tonalRamp": ["#0b0917", "#242135", "#403b57", "#5d587b", "#807ba0", "#a4a0c1", "#cac7e2", "#eeebff"] },
+      "popover": { "role": "neutral", "displayName": "Popover Violet", "tonalRamp": ["#0b0918", "#232137", "#3f3b59", "#5c587d", "#7f7ba3", "#a3a0c3", "#c9c7e4", "#edecff"] },
+      "secondary": { "role": "neutral", "displayName": "Raised Violet", "tonalRamp": ["#0b081a", "#23203a", "#3e3a5d", "#5c5782", "#7e7aa9", "#a29fc8", "#c8c6e9", "#edebff"] },
+      "border": { "role": "neutral", "displayName": "Violet Rule", "tonalRamp": ["#0b071c", "#231f3d", "#3f3961", "#5c5687", "#7e78ae", "#a39ecd", "#c9c5ed", "#edeaff"] },
+      "scrim": { "role": "neutral", "displayName": "Scrim (used at 80%)", "tonalRamp": ["#0b0a11", "#24222d", "#403e4c", "#5d5b6d", "#807d91", "#a4a2b4", "#cac8d7", "#eeedf9"] },
+      "foreground": { "role": "neutral", "displayName": "Off-white Ink", "tonalRamp": ["#0c0a10", "#25222c", "#413d4a", "#5f5b6b", "#817d8f", "#a6a2b1", "#cbc8d5", "#efedf7"] },
+      "foreground-2": { "role": "neutral", "displayName": "Soft Ink", "tonalRamp": ["#0c0915", "#252133", "#413b54", "#5f5878", "#827b9d", "#a6a0be", "#cbc7e0", "#efebff"] },
+      "muted-foreground": { "role": "neutral", "displayName": "Muted Ink", "tonalRamp": ["#0c0916", "#252034", "#413b56", "#5f5879", "#827a9f", "#a6a0c0", "#cbc6e1", "#efebff"] },
+      "primary": { "role": "primary", "displayName": "UV Yellow", "tonalRamp": ["#0b0d00", "#232900", "#3d4700", "#5a6700", "#7c8b00", "#a0b01f", "#c6d571", "#eaf8ab"] },
+      "primary-foreground": { "role": "neutral", "displayName": "Ground on Yellow", "tonalRamp": ["#0b0914", "#242132", "#3f3c52", "#5d5a75", "#807c9a", "#a4a1bb", "#cac8de", "#eeecfe"] },
+      "ink-pink": { "role": "secondary", "displayName": "Wristband Pink (single entries)", "tonalRamp": ["#230012", "#4a002e", "#74014e", "#a01c6f", "#cb4593", "#ea78b6", "#ffa8d9", "#ffd4fa"] },
+      "ink-cyan": { "role": "secondary", "displayName": "Table Cyan (tables, multi-person)", "tonalRamp": ["#00111a", "#002e3a", "#004d5d", "#006f83", "#0094a8", "#3cb7c8", "#83dbe8", "#b9fcff"] },
+      "ink-violet": { "role": "secondary", "displayName": "Presale Violet", "tonalRamp": ["#0d061d", "#271d3f", "#433664", "#62528b", "#8475b2", "#a89bd1", "#cdc3f0", "#f0e9ff"] },
+      "success": { "role": "tertiary", "displayName": "Paid Green", "tonalRamp": ["#001400", "#00310b", "#005221", "#007537", "#009b58", "#50bd83", "#8de0af", "#c1ffd9"] },
+      "warning": { "role": "tertiary", "displayName": "Attention Amber", "tonalRamp": ["#1c0300", "#3e1900", "#623200", "#8a4d00", "#b17000", "#d0994a", "#f0c185", "#ffe8b9"] },
+      "destructive": { "role": "tertiary", "displayName": "Void Red", "tonalRamp": ["#270002", "#500012", "#7c0028", "#ab1540", "#d74260", "#f57789", "#ffa8b3", "#ffd4dc"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display total", "purpose": "The sale total only, one per view, grotesk 800 with tabular figures over a mono caption." },
+      "headline": { "displayName": "Headline", "purpose": "Modal and sheet titles." },
+      "title": { "displayName": "Title", "purpose": "Plan-row names; 600/15px for tiles and checkout lines." },
+      "body": { "displayName": "Body", "purpose": "Supporting text, conditions, hints." },
+      "label": { "displayName": "Field label", "purpose": "Form field labels only, uppercase." },
+      "mono-caption": { "displayName": "Mono caption", "purpose": "Uppercase live data readouts and figure labels, header clock." },
+      "mono-figure": { "displayName": "Mono figure", "purpose": "Prices, totals per line, CI, references, codes, dates, amount inputs." },
+      "mono-count": { "displayName": "Mono count", "purpose": "Stepper quantities." }
+    },
+    "shadows": [
+      { "name": "stamp-lift", "value": "0 12px 40px rgb(11 8 23 / 0.55)", "purpose": "Only under the PAGADO stamp. A dark lift, never a glow. No other element has a shadow." }
+    ],
+    "motion": [
+      { "name": "press", "value": "100ms ease-out; transform scale(0.97) buttons and tiles, 0.98 segments, 0.96 method options, 0.92 steppers", "purpose": "Press feedback and all state colour changes." },
+      { "name": "live-lift", "value": "100ms; translateY(-2px)", "purpose": "A plan row becoming live." },
+      { "name": "step-back", "value": "100ms opacity to 0.35 (band) and colour to foreground-2 (name)", "purpose": "Other rows stepping back while one is live." },
+      { "name": "disclosure", "value": "150ms; chevron rotate 180deg, content fade + slide from top 4px", "purpose": "Más datos and similar expanders." },
+      { "name": "sheet-enter", "value": "200ms ease-out; slide up 2rem + fade on phones, fade + zoom from 0.98 on sm+", "purpose": "Modal and sheet entrance." },
+      { "name": "stamp", "value": "420ms cubic-bezier(0.2, 0, 0, 1); rotate(-14deg) scale 1.35 -> 0.96 at 55% -> 1; removed at 1800ms", "purpose": "The PAGADO / PREVENTA stamp on a saved sale." },
+      { "name": "reduced-motion", "value": "animation and transition durations clamp to 1ms", "purpose": "prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary CTA",
+      "kind": "button",
+      "refersTo": "button-cta",
+      "description": "Cobrar / Guardar: the one pinned main action per view, full width, UV yellow.",
+      "html": "<button class=\"ds-btn-cta\">Cobrar</button>",
+      "css": ".ds-btn-cta { width: 100%; height: 56px; border: none; border-radius: 16px; background: var(--primary, #e8ff3a); color: var(--primary-foreground, #17122b); font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 1.125rem; font-weight: 700; cursor: pointer; transition: filter 100ms ease-out, transform 100ms ease-out; } .ds-btn-cta:hover { filter: brightness(1.1); } .ds-btn-cta:active { transform: scale(0.97); } .ds-btn-cta:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Everyday actions such as Verificar reserva.",
+      "html": "<button class=\"ds-btn-secondary\">Verificar reserva</button>",
+      "css": ".ds-btn-secondary { height: 40px; padding: 0 16px; border-radius: 14px; background: var(--secondary, #2c2550); color: var(--foreground, #efeaff); border: 1px solid var(--border, #382f62); font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: border-color 100ms ease-out, transform 100ms ease-out; } .ds-btn-secondary:hover { border-color: var(--muted-foreground, #958db5); } .ds-btn-secondary:active { transform: scale(0.97); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Raised violet field; the rule turns UV yellow on focus and stays red when aria-invalid.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-label\">CI *</span><input class=\"ds-input ds-mono\" placeholder=\"1234567 LP\" /></label>",
+      "css": ".ds-field { display: block; } .ds-label { display: block; margin-bottom: 6px; font-family: 'Bricolage Grotesque', ui-sans-serif, sans-serif; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.025em; color: var(--muted-foreground, #958db5); } .ds-input { width: 100%; height: 40px; padding: 0 12px; border-radius: 14px; background: var(--secondary, #2c2550); border: 1px solid var(--border, #382f62); color: var(--foreground, #efeaff); font-size: 16px; caret-color: var(--primary, #e8ff3a); } .ds-input::placeholder { color: var(--muted-foreground, #958db5); } .ds-input:focus { outline: none; border-color: var(--primary, #e8ff3a); } .ds-input[aria-invalid=true] { border-color: var(--destructive, #ff5c7a); } .ds-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }"
+    },
+    {
+      "name": "Mode Switch",
+      "kind": "chip",
+      "refersTo": "segment-on",
+      "description": "Puerta / Barra: selected segment inverts to off-white; the yellow pill counts cart items.",
+      "html": "<div class=\"ds-seg-wrap\"><button class=\"ds-seg ds-seg-on\" aria-pressed=\"true\"><span><b>Puerta</b><small>Entradas</small></span><i class=\"ds-pill-inv\">1</i></button><button class=\"ds-seg\" aria-pressed=\"false\"><span><b>Barra</b><small>Consumo</small></span><i class=\"ds-pill\">2</i></button></div>",
+      "css": ".ds-seg-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; } .ds-seg { height: 56px; border: none; border-radius: 16px; padding: 0 16px; display: flex; align-items: center; gap: 12px; text-align: left; background: var(--card, #211a3b); color: var(--foreground-2, #bdb5dc); font-family: 'Bricolage Grotesque', ui-sans-serif, sans-serif; cursor: pointer; transition: background-color 100ms ease-out, transform 100ms ease-out; } .ds-seg b { display: block; font-size: 1rem; font-weight: 700; } .ds-seg small { display: block; font-size: 0.75rem; opacity: 0.7; } .ds-seg:active { transform: scale(0.98); } .ds-seg-on { background: var(--foreground, #efeaff); color: var(--background, #17122b); } .ds-pill, .ds-pill-inv { margin-left: auto; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 9999px; display: grid; place-items: center; font: 700 14px 'JetBrains Mono', monospace; font-style: normal; } .ds-pill { background: var(--primary, #e8ff3a); color: var(--primary-foreground, #17122b); } .ds-pill-inv { background: var(--background, #17122b); color: var(--foreground, #efeaff); } .ds-seg:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Plan Row with Wristband",
+      "kind": "custom",
+      "refersTo": "plan-row",
+      "description": "Signature: wristband-led plan rows. The live row floods in its ink; others step back through band and name while controls stay full strength.",
+      "html": "<div class=\"ds-rows\"><div class=\"ds-row ds-row-live ds-pink\"><span class=\"ds-band\"><span class=\"ds-snap\"></span></span><div class=\"ds-row-txt\"><p class=\"ds-row-name\">Entrada VIP</p><p class=\"ds-row-sub\"><span class=\"ds-mono\">Bs 80,00</span></p></div><button class=\"ds-step\" aria-label=\"Quitar\">&minus;</button><span class=\"ds-count\">1</span><button class=\"ds-step ds-step-add\" aria-label=\"Agregar\">+</button></div><div class=\"ds-row ds-cyan ds-back\"><span class=\"ds-band\"><span class=\"ds-snap\"></span></span><div class=\"ds-row-txt\"><p class=\"ds-row-name\">Mesa VIP <span class=\"ds-mono ds-x\">&times;6</span></p><p class=\"ds-row-sub\"><span class=\"ds-mono\">Bs 600,00</span></p></div><button class=\"ds-step\" disabled aria-label=\"Quitar\">&minus;</button><span class=\"ds-count\">0</span><button class=\"ds-step ds-step-add\" aria-label=\"Agregar\">+</button></div></div>",
+      "css": ".ds-rows { display: grid; gap: 8px; } .ds-row { min-height: 76px; border-radius: 16px; padding: 10px 12px 10px 16px; display: flex; align-items: center; gap: 14px; background: var(--card, #211a3b); color: var(--foreground, #efeaff); font-family: 'Bricolage Grotesque', ui-sans-serif, sans-serif; transition: background-color 100ms, transform 100ms; } .ds-pink { --ink: var(--ink-pink, #ff4fb8); } .ds-cyan { --ink: var(--ink-cyan, #38e8ff); } .ds-band { position: relative; flex: none; width: 16px; height: 48px; border-radius: 9999px; background: var(--ink); transition: opacity 100ms; } .ds-snap { position: absolute; left: 50%; top: 8px; width: 6px; height: 6px; margin-left: -3px; border-radius: 9999px; background: var(--background, #17122b); } .ds-row-txt { flex: 1; min-width: 0; } .ds-row-name { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.25; transition: color 100ms; } .ds-row-sub { margin: 2px 0 0; font-size: 0.875rem; color: var(--foreground-2, #bdb5dc); } .ds-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; } .ds-x { font-size: 0.75rem; font-weight: 500; margin-left: 8px; color: var(--muted-foreground, #958db5); } .ds-step { width: 48px; height: 48px; border: none; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: var(--secondary, #2c2550); color: var(--foreground, #efeaff); cursor: pointer; transition: transform 100ms ease-out; } .ds-step:active { transform: scale(0.92); } .ds-step:disabled { opacity: 0.3; } .ds-step-add { background: var(--foreground, #efeaff); color: var(--background, #17122b); } .ds-count { width: 32px; text-align: center; font: 700 22px 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; } .ds-row-live { background: var(--ink); color: var(--background, #17122b); transform: translateY(-2px); } .ds-row-live .ds-band { background: var(--background, #17122b); } .ds-row-live .ds-snap { background: var(--ink); } .ds-row-live .ds-row-sub { color: rgb(23 18 43 / 0.75); } .ds-row-live .ds-step { background: rgb(23 18 43 / 0.9); color: var(--foreground, #efeaff); } .ds-row-live .ds-step-add { background: var(--background, #17122b); } .ds-back .ds-band { opacity: 0.35; } .ds-back .ds-row-name { color: var(--foreground-2, #bdb5dc); } .ds-step:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Payment Method",
+      "kind": "chip",
+      "refersTo": "method-option-on",
+      "description": "Cómo pagó radiogroup; the chosen method floods UV yellow.",
+      "html": "<div class=\"ds-methods\" role=\"radiogroup\"><button class=\"ds-method ds-method-on\" role=\"radio\" aria-checked=\"true\">QR / Transf.</button><button class=\"ds-method\" role=\"radio\" aria-checked=\"false\">Efectivo</button><button class=\"ds-method\" role=\"radio\" aria-checked=\"false\">Tarjeta</button></div>",
+      "css": ".ds-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; } .ds-method { height: 64px; border: none; border-radius: 12px; background: var(--secondary, #2c2550); color: var(--foreground-2, #bdb5dc); font: 600 0.875rem 'Bricolage Grotesque', ui-sans-serif, sans-serif; cursor: pointer; transition: background-color 100ms ease-out, color 100ms ease-out, transform 100ms ease-out; } .ds-method:hover { color: var(--foreground, #efeaff); } .ds-method:active { transform: scale(0.96); } .ds-method-on, .ds-method-on:hover { background: var(--primary, #e8ff3a); color: var(--primary-foreground, #17122b); } .ds-method:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "Charge Bar",
+      "kind": "custom",
+      "refersTo": "button-cta",
+      "description": "Pinned bottom bar on phones and tablets: mono caption summary, display total, Cobrar.",
+      "html": "<div class=\"ds-charge\"><div class=\"ds-charge-top\"><span class=\"ds-cap\">1 ítem · 1 persona</span><span class=\"ds-total\">Bs 80,00</span></div><button class=\"ds-charge-btn\">Cobrar</button></div>",
+      "css": ".ds-charge { padding: 12px 16px 16px; background: var(--background, #17122b); border-top: 1px solid var(--border, #382f62); } .ds-charge-top { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; } .ds-cap { padding-bottom: 4px; font: 400 0.75rem 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted-foreground, #958db5); } .ds-total { font: 800 2.25rem/1 'Bricolage Grotesque', ui-sans-serif, sans-serif; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--foreground, #efeaff); } .ds-charge-btn { width: 100%; height: 56px; border: none; border-radius: 16px; background: var(--primary, #e8ff3a); color: var(--primary-foreground, #17122b); font: 700 1.125rem 'Bricolage Grotesque', ui-sans-serif, sans-serif; cursor: pointer; transition: transform 100ms ease-out; } .ds-charge-btn:active { transform: scale(0.97); } .ds-charge-btn:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: 2px; }"
+    },
+    {
+      "name": "PAGADO Stamp",
+      "kind": "custom",
+      "description": "Signature moment on a saved sale: tilted round ink stamp with time and amount, pressed in two quick steps.",
+      "html": "<div class=\"ds-stamp\"><div class=\"ds-stamp-in\"><span class=\"ds-stamp-word\">PAGADO</span><span class=\"ds-stamp-meta\">23:41<br>Bs 80,00</span><span class=\"ds-stamp-mark\">DEMO</span></div></div>",
+      "css": "@keyframes ds-stamp { 0% { opacity: 0; transform: rotate(-14deg) scale(1.35); } 55% { opacity: 1; transform: rotate(-14deg) scale(0.96); } 100% { opacity: 1; transform: rotate(-14deg) scale(1); } } .ds-stamp { width: 192px; height: 192px; border-radius: 9999px; border: 6px solid var(--ink-pink, #ff4fb8); color: var(--ink-pink, #ff4fb8); background: var(--background, #17122b); box-shadow: 0 12px 40px rgb(11 8 23 / 0.55); display: grid; place-items: center; animation: ds-stamp 420ms cubic-bezier(0.2, 0, 0, 1) both; } .ds-stamp-in { width: 164px; height: 164px; border-radius: 9999px; border: 2px solid currentColor; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; } .ds-stamp-word { font: 800 32px/1 'Bricolage Grotesque', ui-sans-serif, sans-serif; letter-spacing: -0.02em; } .ds-stamp-meta { font: 700 13px/1.25 'JetBrains Mono', monospace; text-align: center; white-space: nowrap; } .ds-stamp-mark { font: 400 11px 'JetBrains Mono', monospace; letter-spacing: 0.2em; } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation-duration: 1ms; } }"
+    },
+    {
+      "name": "Bottom Nav",
+      "kind": "nav",
+      "description": "Phone bottom navigation: five 64px tabs, active in UV yellow, padded by the safe area.",
+      "html": "<nav class=\"ds-bnav\"><a class=\"ds-tab ds-tab-on\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><path d=\"M8 12h8M12 8v8\"/></svg>Vender</a><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z\"/></svg>Ventas</a><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"/></svg>Cierre</a></nav>",
+      "css": ".ds-bnav { display: flex; background: var(--background, #17122b); border-top: 1px solid var(--border, #382f62); padding-bottom: env(safe-area-inset-bottom); } .ds-tab { flex: 1; height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 400 11px 'Bricolage Grotesque', ui-sans-serif, sans-serif; color: var(--muted-foreground, #958db5); text-decoration: none; } .ds-tab-on { color: var(--primary, #e8ff3a); } .ds-tab:focus-visible { outline: 2px solid var(--primary, #e8ff3a); outline-offset: -2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Sello UV",
+    "overview": "The interface speaks the club door's ink system instead of the category's grey cards with one blue accent: a deep blacklight-violet ground, lifted violet surfaces, off-white text, and a handful of flat fluorescent inks whose meanings never change. Wristband colours mark plans; the UV hand stamp marks a saved sale. Fluorescence comes from colour alone.\n\nIt is built for a phone held in one hand in a dark, loud room. Targets are large, the money is always the biggest thing on screen, the main action is pinned under the thumb, and state changes snap in about a tenth of a second. Not playful, not dense. The owner's laptop gets the same world with a sidebar and a side checkout panel.\n\nThe app is dark-only (`color-scheme: dark`). Whether daylight owner screens ever need light surfaces is unresolved; do not invent a light theme.",
+    "keyCharacteristics": [
+      "Blacklight-violet ground, tonal violet surfaces, no shadows (one exception: the stamp).",
+      "Five inks with fixed meanings; UV yellow is reserved for the active item and the main action.",
+      "Flat ink only: no glow, gradients, blur or grain.",
+      "Bold optical-size grotesk for the interface, mono for figures, times and codes.",
+      "One-hand, mobile-native operation: pinned primary action, 48px+ targets, safe areas respected."
+    ],
+    "rules": [
+      { "name": "The Fixed Ink Rule", "body": "Each ink means one thing on every screen: yellow = active item / main action, pink = single entry, cyan = table / multi-person, violet = presale, green / amber / red = paid / attention / void-error. Never use an ink decoratively or for a second meaning.", "section": "colors" },
+      { "name": "The One Yellow Rule", "body": "UV yellow marks the single most important action or the item currently in play. Selected modes and filters (Puerta/Barra, category chips) invert to off-white, not yellow; presale selection is violet.", "section": "colors" },
+      { "name": "The Flat Ink Rule", "body": "Colour is applied as solid fills and 1px rules. No glow, no gradients, no blur or backdrop-filter, no grain or texture, no neon text-shadow.", "section": "colors" },
+      { "name": "The Ticket Figures Rule", "body": "Every money amount, time, quantity, ID number, reference and code is set in mono with tabular figures. The display total is the one figure set in the grotesk (800, tabular).", "section": "typography" },
+      { "name": "The Data-Only Caption Rule", "body": "Mono uppercase captions carry live data or label a figure. They are not decorative eyebrows above headings.", "section": "typography" },
+      { "name": "The Pinned Action Rule", "body": "On phones and tablets the screen's primary action is pinned at the bottom, full width, above the bottom nav and safe area. Inside sheets and panels the save button lives in a sticky footer, so one thumb reaches it on every sale.", "section": "layout" },
+      { "name": "The No-Nest Rule", "body": "One container level per area. Inside a panel or sheet, sections are split by a top rule (`border-top: 1px border`, 16px above, 20px between sections), never by cards inside cards.", "section": "elevation" },
+      { "name": "The Step-Back Rule", "body": "While any row is live, the other rows step back through band and name only: the wristband drops to 35% opacity and the name to soft ink. Their price and stepper controls stay full strength, so the next tap is never harder to see.", "section": "components" }
+    ],
+    "dos": [
+      "**Do** keep every ink to its one meaning (The Fixed Ink Rule); colour new plan types pink if single-person, cyan if multi-person, violet when presale.",
+      "**Do** spend UV yellow only on the main action and the item in play; select modes and filters with the off-white inversion.",
+      "**Do** set money, times, counts, CI, references and codes in JetBrains Mono with tabular figures; set the one display total at 800 grotesk over a mono caption.",
+      "**Do** split sections inside a panel with a 1px top rule and keep one container level.",
+      "**Do** pin the primary action full width at the bottom on phones (56px, 16px radius) and keep sheet save buttons in a sticky footer.",
+      "**Do** use 100ms ease-out for state changes and press feedback (`scale` 0.97 buttons and tiles, 0.98 segments, 0.96 method options, 0.92 steppers); 150ms for disclosures, 200ms for sheet entrances.",
+      "**Do** make touch targets at least 48px for repeated actions (steppers, segments, CTAs, bottom tabs) and never under 40px.",
+      "**Do** keep the mobile-native base: `viewport-fit=cover` with safe-area padding on header, bottom nav, charge bar and sheet footers; `interactive-widget=resizes-content`; `dvh` heights; inputs at 16px minimum; `touch-action: manipulation`; no long-press selection on controls; no tap highlight; `overscroll-behavior: none` on the page and `contain` in scroll areas; theme colour `#17122b`.",
+      "**Do** honour `prefers-reduced-motion` (animations and transitions clamp to 1ms).",
+      "**Do** point at the field to fix on validation errors (red rule, scroll, focus), not only a toast."
+    ],
+    "donts": [
+      "**Don't** add glow, neon text-shadow, gradients, blur, backdrop-filter, grain or textures. Fluorescence is colour only.",
+      "**Don't** add shadows to cards, rows, panels or buttons; the stamp lift is the only shadow.",
+      "**Don't** use UV yellow for decoration, headings, links, selected filters or a second CTA on the same view.",
+      "**Don't** nest cards inside cards or panels.",
+      "**Don't** set figures in the proportional face, or set interface text in the mono.",
+      "**Don't** dim a step-back row's price or steppers; only band and name step back.",
+      "**Don't** use floaty easing, bounces or slow fades; state changes snap.",
+      "**Don't** put mono uppercase eyebrows or kickers above headings; captions carry data.",
+      "**Don't** use the PAGADO stamp for anything but a saved payment.",
+      "**Don't** introduce a light theme or new inks without a decision."
+    ]
+  }
+}
