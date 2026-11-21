@@ -119,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The night's clock beside the DEMO mark (24h, La Paz). Empty until mounted so server and client agree. */
+/** The night's clock beside the NOX mark (24h, La Paz). Empty until mounted so server and client agree. */
 function HeaderClock() {
   const [t, setT] = useState("");
   useEffect(() => {

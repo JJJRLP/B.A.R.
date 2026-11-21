@@ -1,6 +1,6 @@
 ---
-name: DEMO
-description: Sales and payment register for a night venue, in the Sello UV world (DEMO is a placeholder name).
+name: Nox
+description: Sales and payment register for a night venue, in the Sello UV world.
 colors:
   background: "#17122b"
   card: "#211a3b"
@@ -19,6 +19,11 @@ colors:
   success: "#5cf2a4"
   warning: "#ffb547"
   destructive: "#ff5c7a"
+  glow-pink: "#ff2fa8"
+  glow-violet: "#a24bff"
+  glow-indigo: "#6a4dff"
+  glow-cyan: "#22d8ff"
+  glow-orchid: "#ff5cd0"
 typography:
   display:
     fontFamily: "Bricolage Grotesque, ui-sans-serif, system-ui, sans-serif"
@@ -170,7 +175,7 @@ components:
     rounded: "{rounded.2xl}"
 ---
 
-# Design System: DEMO
+# Design System: Nox
 
 ## Overview
 
@@ -185,7 +190,7 @@ The app is dark-only (`color-scheme: dark`). Whether daylight owner screens ever
 **Key Characteristics:**
 - Blacklight-violet ground, tonal violet surfaces, no shadows (one exception: the stamp).
 - Five inks with fixed meanings; UV yellow is reserved for the active item and the main action.
-- Flat ink only: no glow, gradients, blur or grain.
+- Flat ink only inside the app: no glow, gradients, blur or grain. The one exception is the Door Glow on the sign-in screen.
 - Bold optical-size grotesk for the interface, mono for figures, times and codes.
 - One-hand, mobile-native operation: pinned primary action, 48px+ targets, safe areas respected.
 
@@ -225,6 +230,8 @@ Status fills are tints, not floods: 15% fill + 30% border of the status colour w
 **The One Yellow Rule.** UV yellow marks the single most important action or the item currently in play. Selected modes and filters (Puerta/Barra, category chips) invert to off-white, not yellow; presale selection is violet.
 
 **The Flat Ink Rule.** Colour is applied as solid fills and 1px rules. No glow, no gradients, no blur or backdrop-filter, no grain or texture, no neon text-shadow.
+
+**The Door Glow.** The sign-in screen is the venue door and the one place Nox glows. The light travels rather than sitting still (`.edge-glow` in globals.css): two comets, hot pink and cyan, each with a white-hot head and a fading tail, run clockwise around the screen edges once every 8s, while a violet streak runs the other way every 13s and fades in and out. Between passes the edges go dark, and the intensity wavers slightly, like a light rig being played. Everything fades in over 1.2s, the falloff stays narrow (40-104px) so the light never touches the form, and the motion uses transform and opacity only. Under reduced motion the comets stop and a soft, still frame in the same inks remains. The form, wordmark and button on that screen stay flat. Never bring the glow into working screens, where prices and buttons must stay sharp in a dark venue.
 
 ## Typography
 
@@ -319,7 +326,7 @@ Fixed to the bottom on phones and tablets once the cart has items: ground fill, 
 On xl a sticky 16px-radius panel; below xl a modal with `fullOnMobile` that owns the whole screen on phones. Sections in order (Detalle, Total, presale notice, Titular, Cómo pagó, comprobante and reference, Monto recibido, Más datos, alerts) are split by top rules. The lines list caps at 32vh and scrolls. Optional fields hide behind "Más datos" (chevron rotates 150ms, content fades in 150ms). The Guardar CTA sits in a sticky footer padded by the safe area and repeats the amount.
 
 ### PAGADO Stamp (signature moment)
-On save the cart clears, the sheet closes, and a 192px round stamp presses onto the centre of the screen: ground fill, 6px ink ring, an inner 2px ring, "PAGADO" (800, 32px) over the time and amount in bold 13px mono on two lines, and "DEMO" in 11px mono tracked 0.2em. Pink for a sale, violet with "PREVENTA" for a presale. Tilted -14°, it lands in 420ms `cubic-bezier(0.2, 0, 0, 1)` in two steps (from 1.35 down to 0.96 by 55%, settle to 1), holds, and is gone after 1.8s. It ignores pointer events and is mirrored by a polite live region ("Venta de Bs X guardada"). Reserve the stamp for a completed payment.
+On save the cart clears, the sheet closes, and a 192px round stamp presses onto the centre of the screen: ground fill, 6px ink ring, an inner 2px ring, "PAGADO" (800, 32px) over the time and amount in bold 13px mono on two lines, and "NOX" in 11px mono tracked 0.2em. Pink for a sale, violet with "PREVENTA" for a presale. Tilted -14°, it lands in 420ms `cubic-bezier(0.2, 0, 0, 1)` in two steps (from 1.35 down to 0.96 by 55%, settle to 1), holds, and is gone after 1.8s. It ignores pointer events and is mirrored by a polite live region ("Venta de Bs X guardada"). Reserve the stamp for a completed payment.
 
 ### Modals and Sheets
 Bottom sheet on phones (top corners 16px, max 92vh), centred dialog on sm+ (16px radius, max-w-md, or 3xl when wide). A sticky 56px title bar with a top-right 40px round close button; content padded 20px. Entrance 200ms ease-out: slide up 2rem and fade on phones, fade with a 0.98 zoom on desktop. Escape and scrim tap close it; the content scrolls with `overscroll-behavior: contain`.
@@ -348,7 +355,7 @@ Sonner, bottom-centre, popover violet with a 1px rule and 14px radius; status-co
 - **Do** point at the field to fix on validation errors (red rule, scroll, focus), not only a toast.
 
 ### Don't:
-- **Don't** add glow, neon text-shadow, gradients, blur, backdrop-filter, grain or textures. Fluorescence is colour only.
+- **Don't** add glow, neon text-shadow, gradients, blur, backdrop-filter, grain or textures to working screens. Fluorescence is colour only; the Door Glow on sign-in is the single exception.
 - **Don't** add shadows to cards, rows, panels or buttons; the stamp lift is the only shadow.
 - **Don't** use UV yellow for decoration, headings, links, selected filters or a second CTA on the same view.
 - **Don't** nest cards inside cards or panels.

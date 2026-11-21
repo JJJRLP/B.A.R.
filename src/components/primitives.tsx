@@ -157,11 +157,11 @@ export function Spinner() {
   return <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-primary" />;
 }
 
-/** DEMO wordmark: the name in the heavy grotesk with a UV-yellow full stop. */
+/** Nox wordmark: the name in the heavy grotesk with a UV-yellow full stop. */
 export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cx("font-extrabold tracking-[-0.03em] leading-none select-none", className)}>
-      DEMO<span className="text-primary">.</span>
+      NOX<span className="text-primary">.</span>
     </span>
   );
 }

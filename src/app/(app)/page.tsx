@@ -204,7 +204,7 @@ export default function NewSalePage() {
             ) : (
               <>Barra · {ofMode.length} productos</>
             )}
-            {/* on phones the time lives in the header beside the DEMO mark */}
+            {/* on phones the time lives in the header beside the NOX mark */}
             <span className="hidden md:inline">
               <span className="mx-2 text-muted-foreground/50">·</span>
               {clock(now)}
@@ -461,7 +461,7 @@ function Stamp({ amount, at, presale }: { amount: number; at: string; presale: b
             <br />
             {bs(amount)}
           </span>
-          <span className="font-mono text-[11px] tracking-[0.2em]">DEMO</span>
+          <span className="font-mono text-[11px] tracking-[0.2em]">NOX</span>
         </div>
       </div>
     </div>

@@ -14,7 +14,7 @@ web
 
 ## Product Purpose
 
-DEMO is the sales and payment register for a night venue. It replaces payment proof that lived only in WhatsApp with one record of every sale: who sold what, to whom, for how much, how it was paid and when. Success means every entry and drink of the night is recorded in seconds, the door knows who is in, and the owner closes the night in minutes with numbers they trust.
+Nox is the sales and payment register for a night venue. It replaces payment proof that lived only in WhatsApp with one record of every sale: who sold what, to whom, for how much, how it was paid and when. Success means every entry and drink of the night is recorded in seconds, the door knows who is in, and the owner closes the night in minutes with numbers they trust.
 
 ## Positioning
 
@@ -40,7 +40,7 @@ Built for Bolivian nightlife as it actually runs: QR / bank-transfer payments sh
 
 ## Brand Commitments
 
-- "DEMO" is a placeholder product name for now. Final name, logo and visual identity are open.
+- The product name is **Nox** (Latin for night), chosen 2026-11-21. The mark is NOX in the heavy grotesk with a UV-yellow full stop.
 
 ## Evidence on Hand
 

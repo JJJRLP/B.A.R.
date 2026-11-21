@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Sello UV — DEMO's visual world (see .impeccable/surfaces/ for the direction contract).
+  Sello UV — Nox's visual world (see .impeccable/surfaces/ for the direction contract).
   A blacklight-violet ground with flat fluorescent inks. Inks have fixed meanings:
     primary (UV yellow) = the active item and the main action, nothing else
     ink-pink            = single entries (wristband)
@@ -140,6 +140,111 @@
   }
   a {
     text-underline-offset: 3px;
+  }
+}
+
+/*
+  Edge glow: the one place Nox glows (sign-in only, see DESIGN.md "The Door Glow").
+  Light travels instead of sitting still: two comets (hot pink, cyan) run clockwise
+  around the screen edges with white-hot heads and fading tails, and a violet streak
+  runs the other way, fading in and out, so the passes cross and the edges go dark
+  in between. Each layer is a conic gradient spun with transform (compositor only)
+  behind a frame-shaped mask that keeps a bright rim and a short falloff.
+*/
+.edge-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  --fall: clamp(40px, 9vmin, 104px);
+  --frame:
+    linear-gradient(to right, #000 0, rgb(0 0 0 / 0.7) 2px, rgb(0 0 0 / 0.22) calc(var(--fall) * 0.3), transparent var(--fall), transparent calc(100% - var(--fall)), rgb(0 0 0 / 0.22) calc(100% - var(--fall) * 0.3), rgb(0 0 0 / 0.7) calc(100% - 2px), #000 100%),
+    linear-gradient(to bottom, #000 0, rgb(0 0 0 / 0.7) 2px, rgb(0 0 0 / 0.22) calc(var(--fall) * 0.3), transparent var(--fall), transparent calc(100% - var(--fall)), rgb(0 0 0 / 0.22) calc(100% - var(--fall) * 0.3), rgb(0 0 0 / 0.7) calc(100% - 2px), #000 100%);
+  -webkit-mask-image: var(--frame);
+  mask-image: var(--frame);
+  animation: edge-glow-in 1200ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+.edge-glow::before,
+.edge-glow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  margin: -80vmax 0 0 -80vmax;
+  will-change: transform, opacity;
+}
+/* two comets, clockwise: the head sits at the leading (higher) angle, the tail trails behind */
+.edge-glow::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgb(106 77 255 / 0) 14deg,
+    #a24bff 70deg,
+    #ff2fa8 98deg,
+    #ffd6ee 101deg,
+    transparent 105deg,
+    transparent 180deg,
+    rgb(106 77 255 / 0) 196deg,
+    #6a4dff 252deg,
+    #22d8ff 278deg,
+    #dcf9ff 281deg,
+    transparent 285deg,
+    transparent 360deg
+  );
+  animation:
+    edge-glow-spin 8s linear infinite,
+    edge-glow-flicker 5.3s ease-in-out infinite;
+}
+/* a violet streak, counter-clockwise, that comes and goes */
+.edge-glow::after {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 38deg,
+    #ffe3f7 40deg,
+    #ff5cd0 46deg,
+    #a24bff 90deg,
+    rgb(162 75 255 / 0) 150deg,
+    transparent 360deg
+  );
+  animation:
+    edge-glow-spin-back 13s linear infinite,
+    edge-glow-pass 6.5s ease-in-out infinite;
+}
+@keyframes edge-glow-spin {
+  to { transform: rotate(1turn); }
+}
+@keyframes edge-glow-spin-back {
+  from { transform: rotate(140deg); }
+  to { transform: rotate(-220deg); }
+}
+/* uneven intensity, like a light rig that is being played, not left on */
+@keyframes edge-glow-flicker {
+  0%, 100% { opacity: 1; }
+  28% { opacity: 0.78; }
+  32% { opacity: 1; }
+  58% { opacity: 0.9; }
+  63% { opacity: 0.5; }
+  67% { opacity: 1; }
+}
+@keyframes edge-glow-pass {
+  0%, 100% { opacity: 0; }
+  35%, 55% { opacity: 0.95; }
+}
+@keyframes edge-glow-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no travelling light: a soft, still frame in the same inks */
+  .edge-glow::after { display: none; }
+  .edge-glow::before {
+    animation: none !important;
+    opacity: 0.55;
+    background: conic-gradient(from 0deg, #ff2fa8, #a24bff 25%, #22d8ff 50%, #6a4dff 75%, #ff2fa8);
   }
 }
 

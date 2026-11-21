@@ -9,7 +9,7 @@ const bricolage = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: [
 const jetbrains = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "DEMO · Ventas de la noche",
+  title: "Nox · Ventas de la noche",
   description: "Registro de ventas y comprobantes de pago",
   manifest: "/manifest.webmanifest",
 };

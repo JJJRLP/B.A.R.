@@ -1,6 +1,6 @@
 {
-  "name": "DEMO · Ventas de la noche",
-  "short_name": "DEMO",
+  "name": "Nox · Ventas de la noche",
+  "short_name": "Nox",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#17122b",

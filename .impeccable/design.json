@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-21T00:00:00Z",
-  "title": "Design System: DEMO",
+  "title": "Design System: Nox",
   "extensions": {
     "colorMeta": {
       "background": { "role": "neutral", "displayName": "Blacklight Ground", "tonalRamp": ["#0b0914", "#242132", "#3f3c52", "#5d5a75", "#807c9a", "#a4a1bb", "#cac8de", "#eeecfe"] },
@@ -112,7 +112,7 @@
       "name": "PAGADO Stamp",
       "kind": "custom",
       "description": "Signature moment on a saved sale: tilted round ink stamp with time and amount, pressed in two quick steps.",
-      "html": "<div class=\"ds-stamp\"><div class=\"ds-stamp-in\"><span class=\"ds-stamp-word\">PAGADO</span><span class=\"ds-stamp-meta\">23:41<br>Bs 80,00</span><span class=\"ds-stamp-mark\">DEMO</span></div></div>",
+      "html": "<div class=\"ds-stamp\"><div class=\"ds-stamp-in\"><span class=\"ds-stamp-word\">PAGADO</span><span class=\"ds-stamp-meta\">23:41<br>Bs 80,00</span><span class=\"ds-stamp-mark\">NOX</span></div></div>",
       "css": "@keyframes ds-stamp { 0% { opacity: 0; transform: rotate(-14deg) scale(1.35); } 55% { opacity: 1; transform: rotate(-14deg) scale(0.96); } 100% { opacity: 1; transform: rotate(-14deg) scale(1); } } .ds-stamp { width: 192px; height: 192px; border-radius: 9999px; border: 6px solid var(--ink-pink, #ff4fb8); color: var(--ink-pink, #ff4fb8); background: var(--background, #17122b); box-shadow: 0 12px 40px rgb(11 8 23 / 0.55); display: grid; place-items: center; animation: ds-stamp 420ms cubic-bezier(0.2, 0, 0, 1) both; } .ds-stamp-in { width: 164px; height: 164px; border-radius: 9999px; border: 2px solid currentColor; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; } .ds-stamp-word { font: 800 32px/1 'Bricolage Grotesque', ui-sans-serif, sans-serif; letter-spacing: -0.02em; } .ds-stamp-meta { font: 700 13px/1.25 'JetBrains Mono', monospace; text-align: center; white-space: nowrap; } .ds-stamp-mark { font: 400 11px 'JetBrains Mono', monospace; letter-spacing: 0.2em; } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation-duration: 1ms; } }"
     },
     {
