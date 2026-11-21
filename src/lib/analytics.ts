@@ -149,3 +149,81 @@ export function peopleByNight(sales: Sale[]) {
     cells,
   };
 }
+
+/** Every business day from `from` to `to`, inclusive (yyyy-mm-dd). */
+export function daysBetween(from: string, to: string): string[] {
+  const out: string[] = [];
+  const d = new Date(from + "T00:00:00Z");
+  const end = new Date(to + "T00:00:00Z");
+  while (d <= end && out.length < 400) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+export interface NightRevenue {
+  day: string;
+  door: number; // entries (puerta)
+  bar: number; // consumo (barra)
+}
+
+/** Money taken per business day in the range, split door / bar (voided sales left out). */
+export function revenueByNight(sales: Sale[], from: string, to: string): NightRevenue[] {
+  const rows = new Map(daysBetween(from, to).map((day) => [day, { day, door: 0, bar: 0 }]));
+  for (const s of active(sales)) {
+    const row = rows.get(s.business_day);
+    if (!row) continue;
+    for (const i of s.items) {
+      if (i.product_type === "entrada") row.door += i.subtotal;
+      else row.bar += i.subtotal;
+    }
+  }
+  return Array.from(rows.values());
+}
+
+/** People per night in the range (zero-filled), with the per-plan split for tooltips. */
+export function peopleTotals(sales: Sale[], from: string, to: string) {
+  const grid = peopleByNight(sales);
+  return daysBetween(from, to).map((day) => {
+    const cells = grid.cells[day] ?? {};
+    return {
+      day,
+      total: Object.values(cells).reduce((a, n) => a + n, 0),
+      plans: grid.plans.filter((p) => cells[p.id]).map((p) => ({ name: p.name, people: cells[p.id] })),
+    };
+  });
+}
+
+const hourOf = (iso: string) =>
+  Number(new Intl.DateTimeFormat("en-GB", { timeZone: "America/La_Paz", hour: "2-digit", hourCycle: "h23" }).format(new Date(iso)));
+
+export interface HourRow {
+  hour: number; // 0-23, La Paz
+  sales: number;
+  amount: number;
+}
+
+/** Sales per clock hour, in night order (06:00 → 05:00), trimmed to the hours that had sales. */
+export function salesByHour(sales: Sale[]): HourRow[] {
+  const order = Array.from({ length: 24 }, (_, i) => (i + 6) % 24);
+  const rows = new Map(order.map((hour) => [hour, { hour, sales: 0, amount: 0 }]));
+  for (const s of active(sales)) {
+    const r = rows.get(hourOf(s.created_at))!;
+    r.sales += 1;
+    r.amount += s.total;
+  }
+  const list = order.map((h) => rows.get(h)!);
+  const first = list.findIndex((r) => r.sales > 0);
+  if (first < 0) return [];
+  let last = list.length - 1;
+  while (list[last].sales === 0) last--;
+  return list.slice(first, last + 1);
+}
+
+/** Money received per payment method (voided sales left out). */
+export function methodTotals(sales: Sale[]) {
+  const out = { qr: 0, cash: 0, card: 0 } as Record<"qr" | "cash" | "card", number>;
+  for (const s of active(sales)) for (const p of s.payments) out[p.method] += p.amount;
+  return out;
+}

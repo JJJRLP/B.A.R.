@@ -340,6 +340,15 @@ Bottom sheet on phones (top corners 16px, max 92vh), centred dialog on sm+ (16px
 ### Toasts
 Sonner, bottom-centre, popover violet with a 1px rule and 14px radius; status-coloured icons (green / yellow info / amber / red). On phones they float 88px plus the safe area above the bottom, clear of the nav and charge bar.
 
+### Charts
+Hand-built in `src/components/Charts.tsx` (no chart library), used on Reportes.
+- **Series colours** are their own validated tokens (`--chart-*` in globals.css), checked against the card `#211a3b` for the dark lightness band (OKLCH L 0.48–0.67), chroma ≥ 0.10 and colour-blind separation: Puerta `#e8459f`, Barra `#8f7bff`; QR `#3f8ee0`, Efectivo `#20a98e`, Tarjeta `#d0732f`. People-per-night reuses Puerta pink (people are entries). UV yellow never appears in a chart.
+- **Emphasis over colour:** single-series charts that point at one answer (Hora pico) paint the answer `#efeaff` and the rest `#574d85`.
+- **Columns:** ≤ 24px wide, 4px rounded top, square on the baseline, 2px surface gap between stacked segments. Hairline solid gridlines, 4 clean ticks in mono, one direct label on the peak only.
+- **Interaction:** each column slot is a focusable hit target; the tooltip leads with the value in mono, then the series name keyed by a short line. A legend appears for 2+ series. Every chart has a "Ver tabla" view, so nothing depends on hovering.
+- **Part-to-whole:** a 28px segmented bar with 4px corners, the share printed inside a block when it is 12% or more, and a legend with amounts. Never a pie or donut.
+- **Refetch keeps the frame:** while a new range loads, the page dims to 50% instead of blanking.
+
 ## Do's and Don'ts
 
 ### Do:

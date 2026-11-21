@@ -43,6 +43,15 @@
   --ink-pink: #ff4fb8;
   --ink-cyan: #38e8ff;
   --ink-violet: #c9b8ff;
+
+  /* chart series (validated for the dark card: lightness band, chroma, CVD) */
+  --chart-door: #e8459f;
+  --chart-bar: #8f7bff;
+  --chart-qr: #3f8ee0;
+  --chart-cash: #20a98e;
+  --chart-card: #d0732f;
+  --chart-dim: #574d85;
+  --chart-peak: #efeaff;
 }
 
 @theme inline {
