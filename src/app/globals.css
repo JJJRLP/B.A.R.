@@ -4,37 +4,45 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Theme tokens in shadcn/ui format. The app is dark-only for now.
-  primary     = actions and selection (brand blue)
-  success     = paid / good · warning = needs attention · destructive = voided / errors
-  muted-foreground = secondary text · secondary / accent / muted = quiet surfaces
-  App aliases (bg, surface, surface-2, line, ink, ink-2, ok, warn, bad) point at the same values.
+  Sello UV — DEMO's visual world (see .impeccable/surfaces/ for the direction contract).
+  A blacklight-violet ground with flat fluorescent inks. Inks have fixed meanings:
+    primary (UV yellow) = the active item and the main action, nothing else
+    ink-pink            = single entries (wristband)
+    ink-cyan            = tables / multi-person plans (wristband)
+    ink-violet          = presale
+    success / warning / destructive = paid / attention / voided or errors
+  Flat ink only: no glow, gradients or grain. Tokens use shadcn/ui names; the app
+  aliases (bg, surface, surface-2, line, ink, ink-2, ok, warn, bad) point at the same values.
 */
 :root {
-  --radius: 0.75rem;
+  --radius: 0.875rem;
 
-  --background: #0a0a0b;
-  --foreground: #f2f0eb;
-  --card: #131316;
-  --card-foreground: #f2f0eb;
-  --popover: #131316;
-  --popover-foreground: #f2f0eb;
-  --primary: #4f8cff;
-  --primary-foreground: #ffffff;
-  --secondary: #1b1b1f;
-  --secondary-foreground: #f2f0eb;
-  --muted: #1b1b1f;
-  --muted-foreground: #7a7973;
-  --accent: #1b1b1f;
-  --accent-foreground: #f2f0eb;
-  --destructive: #ef6464;
-  --border: #2a2a30;
-  --input: #2a2a30;
-  --ring: #4f8cff;
+  --background: #17122b;
+  --foreground: #efeaff;
+  --card: #211a3b;
+  --card-foreground: #efeaff;
+  --popover: #262044;
+  --popover-foreground: #efeaff;
+  --primary: #e8ff3a;
+  --primary-foreground: #17122b;
+  --secondary: #2c2550;
+  --secondary-foreground: #efeaff;
+  --muted: #2c2550;
+  --muted-foreground: #958db5;
+  --accent: #2c2550;
+  --accent-foreground: #efeaff;
+  --destructive: #ff5c7a;
+  --border: #382f62;
+  --input: #382f62;
+  --ring: #e8ff3a;
 
-  --success: #4cc38a;
-  --warning: #f0a63c;
-  --foreground-2: #b5b3ad;
+  --success: #5cf2a4;
+  --warning: #ffb547;
+  --foreground-2: #bdb5dc;
+
+  --ink-pink: #ff4fb8;
+  --ink-cyan: #38e8ff;
+  --ink-violet: #c9b8ff;
 }
 
 @theme inline {
@@ -59,6 +67,9 @@
   --color-ring: var(--ring);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-ink-pink: var(--ink-pink);
+  --color-ink-cyan: var(--ink-cyan);
+  --color-ink-violet: var(--ink-violet);
 
   /* app aliases used across the screens */
   --color-bg: var(--background);
@@ -76,8 +87,17 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --animate-stamp: stamp 420ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/* The PAGADO stamp lands: pressed down in a short snap, no float. */
+@keyframes stamp {
+  0% { opacity: 0; transform: rotate(-14deg) scale(1.35); }
+  55% { opacity: 1; transform: rotate(-14deg) scale(0.96); }
+  100% { opacity: 1; transform: rotate(-14deg) scale(1); }
 }
 
 @layer base {
@@ -86,11 +106,27 @@
   }
   html {
     color-scheme: dark;
+    scrollbar-color: var(--border) transparent;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
+    caret-color: var(--primary);
+  }
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
   }
 }
 

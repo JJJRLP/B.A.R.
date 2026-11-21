@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Banknote, CalendarDays, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
 import { getApi } from "@/lib/data";
-import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay } from "@/lib/format";
+import { addDays, bs, businessDay, dateTime, effectivePrice, isFreeNow, longDay, time } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
 import { Button, Empty, Input, Label, Modal, Spinner, cx } from "@/components/primitives";
@@ -11,12 +11,19 @@ import { toast } from "sonner";
 import { DoorLookup } from "@/components/DoorLookup";
 
 type Cart = Record<string, number>; // product id -> qty
+type Ink = "pink" | "cyan" | "violet";
 
 const METHODS: { id: PaymentMethod; label: string; icon: typeof QrCode }[] = [
   { id: "qr", label: "QR / Transf.", icon: QrCode },
   { id: "cash", label: "Efectivo", icon: Banknote },
   { id: "card", label: "Tarjeta", icon: CreditCard },
 ];
+
+// Fixed ink meanings (Sello UV): pink = single entries, cyan = tables, violet = presale.
+const INK_BG: Record<Ink, string> = { pink: "bg-ink-pink", cyan: "bg-ink-cyan", violet: "bg-ink-violet" };
+const INK_BORDER: Record<Ink, string> = { pink: "border-ink-pink", cyan: "border-ink-cyan", violet: "border-ink-violet" };
+const INK_TEXT: Record<Ink, string> = { pink: "text-ink-pink", cyan: "text-ink-cyan", violet: "text-ink-violet" };
+const inkOf = (p: Product, presale: boolean): Ink => (presale ? "violet" : (p.people_per_unit ?? 1) > 1 ? "cyan" : "pink");
 
 export default function NewSalePage() {
   const [products, setProducts] = useState<Product[] | null>(null);
@@ -25,6 +32,7 @@ export default function NewSalePage() {
   const [cart, setCart] = useState<Cart>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [lookupOpen, setLookupOpen] = useState(false);
+  const [stamp, setStamp] = useState<{ id: number; amount: number; at: string; presale: boolean } | null>(null);
 
   useEffect(() => {
     getApi()
@@ -41,9 +49,9 @@ export default function NewSalePage() {
   );
 
   // Entries sold for the night being sold (all devices) for the per-night limits, refreshed every 30 s.
-  // The tick also re-renders so a "free until 23:00" price switches on time.
+  // The tick also re-renders so a "free until 23:00" price and the clock switch on time.
   const [sold, setSold] = useState<Record<string, number>>({});
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => new Date().toISOString());
   const refreshSold = useCallback(() => {
     getApi()
       .entryCounts(presaleDay || undefined)
@@ -54,7 +62,7 @@ export default function NewSalePage() {
     refreshSold();
     const t = setInterval(() => {
       refreshSold();
-      setTick((n) => n + 1);
+      setNow(new Date().toISOString());
     }, 30_000);
     return () => clearInterval(t);
   }, [refreshSold]);
@@ -95,6 +103,9 @@ export default function NewSalePage() {
   );
   const total = lines.reduce((a, l) => a + priceOf(l.product) * l.qty, 0);
   const count = lines.reduce((a, l) => a + l.qty, 0);
+  const cartPeople = lines.reduce((a, l) => a + (l.product.type === "entrada" ? l.qty * (l.product.people_per_unit ?? 1) : 0), 0);
+  const nightPeople = (products ?? []).reduce((a, p) => a + (p.type === "entrada" ? (sold[p.id] ?? 0) * (p.people_per_unit ?? 1) : 0), 0);
+  const anyLive = shown.some((p) => (cart[p.id] ?? 0) > 0);
 
   const add = (id: string, d = 1) => {
     const p = products?.find((x) => x.id === id);
@@ -110,12 +121,23 @@ export default function NewSalePage() {
     });
   };
 
-  const onSaved = useCallback((amount: number) => {
-    setCart({});
-    setSheetOpen(false);
-    refreshSold();
-    toast.success(`${presaleDay ? "Preventa" : "Venta"} de ${bs(amount)} guardada`);
-  }, [refreshSold, presaleDay]);
+  // Signature moment: a saved sale lands the PAGADO stamp.
+  const onSaved = useCallback(
+    (amount: number) => {
+      setCart({});
+      setSheetOpen(false);
+      refreshSold();
+      setStamp({ id: Date.now(), amount, at: new Date().toISOString(), presale: !!presaleDay });
+    },
+    [refreshSold, presaleDay],
+  );
+  useEffect(() => {
+    if (!stamp) return;
+    const t = setTimeout(() => setStamp(null), 1800);
+    return () => clearTimeout(t);
+  }, [stamp]);
+
+  const summary = mode === "entrada" || cartPeople > 0 ? `${count} ${count === 1 ? "ítem" : "ítems"} · ${cartPeople} ${cartPeople === 1 ? "persona" : "personas"}` : `${count} ${count === 1 ? "ítem" : "ítems"}`;
 
   const checkout = (
     <Checkout
@@ -131,72 +153,88 @@ export default function NewSalePage() {
   );
 
   return (
-    <div className="xl:grid xl:grid-cols-[1fr_380px] xl:gap-6">
-      {/* Products */}
+    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-8">
       <section className="min-w-0">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Nueva venta</h1>
-            <p className="text-sm text-ink-2 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
-              <Step n={1} /> Elige entradas o productos <span className="text-muted-foreground">·</span> <Step n={2} /> cómo pagó <span className="text-muted-foreground">·</span> <Step n={3} /> guarda
-            </p>
-          </div>
-          {mode === "entrada" && (
-            <Button onClick={() => setLookupOpen(true)}>
-              <UserSearch size={16} /> Verificar reserva
-            </Button>
-          )}
-        </div>
+        <h1 className="sr-only">Nueva venta</h1>
 
-        {/* Door / bar switch */}
-        <div className="grid grid-cols-2 gap-1 p-1 mb-4 rounded-xl bg-surface border border-line">
+        {/* Door / bar switch: two large segments */}
+        <div className="grid grid-cols-2 gap-2 mb-3">
           {(
             [
-              { m: "entrada", label: "Puerta · Entradas", icon: Ticket },
-              { m: "consumo", label: "Barra · Consumo", icon: GlassWater },
+              { m: "entrada", label: "Puerta", sub: "Entradas", icon: Ticket },
+              { m: "consumo", label: "Barra", sub: "Consumo", icon: GlassWater },
             ] as const
-          ).map(({ m, label, icon: Icon }) => {
+          ).map(({ m, label, sub, icon: Icon }) => {
             const n = cartCount(m);
+            const on = mode === m;
             return (
               <button
                 key={m}
                 onClick={() => setMode(m)}
+                aria-pressed={on}
                 className={cx(
-                  "h-11 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors",
-                  mode === m ? "bg-primary text-primary-foreground" : "text-ink-2 hover:text-ink",
+                  "h-14 rounded-2xl px-4 flex items-center gap-3 transition-colors duration-100",
+                  on ? "bg-foreground text-background" : "bg-card text-ink-2 hover:text-ink",
                 )}
               >
-                <Icon size={17} />
-                {label}
+                <Icon size={20} className="shrink-0" />
+                <span className="text-left leading-tight">
+                  <span className="block font-bold text-base">{label}</span>
+                  <span className={cx("block text-xs", on ? "text-background/70" : "text-muted-foreground")}>{sub}</span>
+                </span>
                 {n > 0 && (
-                  <span className={cx("min-w-5 h-5 px-1.5 rounded-full text-[11px] grid place-items-center tabular", mode === m ? "bg-primary-foreground/20" : "bg-primary/15 text-primary")}>{n}</span>
+                  <span className={cx("ml-auto min-w-7 h-7 px-2 rounded-full font-mono text-sm font-bold grid place-items-center", on ? "bg-background text-foreground" : "bg-primary text-primary-foreground")}>
+                    {n}
+                  </span>
                 )}
               </button>
             );
           })}
         </div>
 
+        {/* Status line: who's in tonight, the time, and the door's tools */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-4">
+          <p className="font-mono text-xs tracking-[0.1em] uppercase text-muted-foreground">
+            {mode === "entrada" ? (
+              <>
+                {presaleDay ? "Preventa" : "En puerta"} · <span className="text-ink">{nightPeople}</span> {nightPeople === 1 ? "persona" : "personas"} {presaleDay ? "para esa noche" : "esta noche"}
+              </>
+            ) : (
+              <>Barra · {ofMode.length} productos</>
+            )}
+            <span className="mx-2 text-line">|</span>
+            {time(now)}
+          </p>
+          {mode === "entrada" && (
+            <Button size="sm" onClick={() => setLookupOpen(true)}>
+              <UserSearch size={16} /> Verificar reserva
+            </Button>
+          )}
+        </div>
+
         {mode === "entrada" && (
           <div className="flex flex-wrap items-center gap-2 mb-4">
-            <div className="grid grid-cols-2 gap-1 p-1 rounded-lg bg-surface border border-line">
+            <div className="grid grid-cols-2 gap-1 p-1 rounded-xl bg-card">
               <button
                 onClick={() => setPresaleDay("")}
-                className={cx("h-9 px-3 rounded-md text-sm", !presaleDay ? "bg-surface-2 text-ink" : "text-ink-2 hover:text-ink")}
+                aria-pressed={!presaleDay}
+                className={cx("h-9 px-3.5 rounded-lg text-sm font-medium", !presaleDay ? "bg-secondary text-ink" : "text-ink-2 hover:text-ink")}
               >
-                En puerta (hoy)
+                En puerta
               </button>
               <button
                 onClick={() => setPresaleDay(presaleDay || addDays(businessDay(), 1))}
-                className={cx("h-9 px-3 rounded-md text-sm flex items-center gap-1.5", presaleDay ? "bg-surface-2 text-ink" : "text-ink-2 hover:text-ink")}
+                aria-pressed={!!presaleDay}
+                className={cx("h-9 px-3.5 rounded-lg text-sm font-medium flex items-center gap-1.5", presaleDay ? "bg-ink-violet text-background" : "text-ink-2 hover:text-ink")}
               >
                 <CalendarDays size={15} /> Preventa
               </button>
             </div>
             {presaleDay && (
               <label className="flex items-center gap-2 text-sm text-ink-2">
-                para la noche del
+                noche del
                 <span className="w-40">
-                  <Input type="date" value={presaleDay} min={businessDay()} onChange={(e) => e.target.value && setPresaleDay(e.target.value)} className="h-9" />
+                  <Input type="date" value={presaleDay} min={businessDay()} onChange={(e) => e.target.value && setPresaleDay(e.target.value)} className="h-9 font-mono" />
                 </span>
               </label>
             )}
@@ -206,17 +244,18 @@ export default function NewSalePage() {
         {mode === "consumo" && (
           <>
             <div className="relative mb-3">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar producto" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-9" />
+              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Buscar producto" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-11 h-12 text-base rounded-xl bg-card" />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 md:mx-0 md:px-0 [scrollbar-width:none]">
               {categories.map((c) => (
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
+                  aria-pressed={c === category}
                   className={cx(
-                    "shrink-0 h-8 rounded-full px-3.5 text-sm border transition-colors",
-                    c === category ? "bg-ink text-bg border-ink" : "border-line text-ink-2 hover:text-ink",
+                    "shrink-0 h-9 rounded-full px-4 text-sm font-medium transition-colors duration-100",
+                    c === category ? "bg-foreground text-background" : "bg-card text-ink-2 hover:text-ink",
                   )}
                 >
                   {c}
@@ -232,71 +271,29 @@ export default function NewSalePage() {
           </div>
         ) : shown.length === 0 ? (
           <Empty
-            icon={mode === "entrada" ? <Ticket size={28} /> : undefined}
+            icon={mode === "entrada" ? <Ticket size={28} /> : <GlassWater size={28} />}
             title={mode === "entrada" ? "Sin tipos de entrada" : "Sin productos"}
             hint={ofMode.length ? "Prueba otra búsqueda o categoría." : "Un administrador debe crearlos en Productos."}
           />
         ) : mode === "entrada" ? (
-          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-3 max-w-2xl 2xl:max-w-none">
-            {shown.map((p) => {
-              const qty = cart[p.id] ?? 0;
-              const price = priceOf(p);
-              const freeNow = !presaleDay && p.price > 0 && isFreeNow(p.free_until);
-              const left = remaining(p);
-              const soldOut = left <= 0 && qty === 0;
-              return (
-                <div
-                  key={p.id}
-                  className={cx(
-                    "rounded-xl border p-4 flex items-center gap-4 transition-colors",
-                    qty ? "border-primary/60 bg-primary/[0.06]" : "border-line bg-surface",
-                    soldOut && "opacity-50",
-                  )}
-                >
-                  <span className="h-11 w-11 rounded-lg bg-primary/12 text-primary grid place-items-center shrink-0">
-                    <Ticket size={20} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">
-                      {p.name}
-                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted-foreground">incluye {p.people_per_unit} entradas</span>}
-                    </p>
-                    <p className="text-sm tabular flex flex-wrap items-center gap-x-2">
-                      {price === 0 ? <span className="text-ok font-medium">Gratis</span> : <span className="text-ink-2">{bs(price)}</span>}
-                      {presaleDay && p.presale_price != null && p.presale_price !== p.price && <span className="text-xs text-muted-foreground line-through">{bs(p.price)}</span>}
-                      {freeNow && <span className="text-xs text-muted-foreground">hasta las {p.free_until}, luego {bs(p.price)}</span>}
-                    </p>
-                    {p.max_per_night && (
-                      <p className={cx("text-xs tabular mt-0.5", left <= 0 ? "text-bad" : left <= 10 ? "text-warn" : "text-muted-foreground")}>
-                        {left <= 0 ? "Cupo agotado" : `Quedan ${left} de ${p.max_per_night}`}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => add(p.id, -1)}
-                      disabled={!qty}
-                      className="h-10 w-10 rounded-lg border border-line grid place-items-center text-ink-2 hover:text-ink disabled:opacity-30"
-                      aria-label={`Quitar una ${p.name}`}
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="w-8 text-center text-lg font-semibold tabular">{qty}</span>
-                    <button
-                      onClick={() => add(p.id, 1)}
-                      disabled={left <= 0}
-                      className="h-10 w-10 rounded-lg bg-primary text-primary-foreground grid place-items-center hover:brightness-110 disabled:opacity-30"
-                      aria-label={`Agregar una ${p.name}`}
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2 max-w-2xl 2xl:max-w-none">
+            {shown.map((p) => (
+              <EntryRow
+                key={p.id}
+                p={p}
+                qty={cart[p.id] ?? 0}
+                price={priceOf(p)}
+                ink={inkOf(p, !!presaleDay)}
+                freeNow={!presaleDay && p.price > 0 && isFreeNow(p.free_until)}
+                presale={!!presaleDay}
+                left={remaining(p)}
+                dim={anyLive && !(cart[p.id] ?? 0)}
+                onAdd={add}
+              />
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2">
             {shown.map((p) => {
               const qty = cart[p.id] ?? 0;
               return (
@@ -304,43 +301,162 @@ export default function NewSalePage() {
                   key={p.id}
                   onClick={() => add(p.id)}
                   className={cx(
-                    "relative text-left rounded-xl border p-3.5 min-h-[88px] flex flex-col justify-between transition-colors active:scale-[0.98]",
-                    qty ? "border-primary/60 bg-primary/[0.06]" : "border-line bg-surface hover:border-muted-foreground",
+                    "relative text-left rounded-2xl p-4 min-h-24 flex flex-col justify-between transition-[background-color,transform] duration-100 active:scale-[0.97]",
+                    qty ? "bg-primary text-primary-foreground" : "bg-card hover:bg-secondary",
                   )}
                 >
-                  <span className="text-sm font-medium leading-snug pr-6">{p.name}</span>
-                  <span className="text-sm text-ink-2 tabular mt-2">{bs(p.price)}</span>
+                  <span className="text-[15px] font-semibold leading-snug pr-8">{p.name}</span>
+                  <span className={cx("font-mono text-sm mt-3", qty ? "text-primary-foreground/80" : "text-ink-2")}>{bs(p.price)}</span>
                   {qty > 0 && (
-                    <span className="absolute top-2.5 right-2.5 min-w-6 h-6 px-1.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold grid place-items-center tabular">
-                      {qty}
-                    </span>
+                    <span className="absolute top-3 right-3 min-w-7 h-7 px-1.5 rounded-full bg-primary-foreground text-primary font-mono text-sm font-bold grid place-items-center">{qty}</span>
                   )}
                 </button>
               );
             })}
           </div>
         )}
+
+        {/* room for the charge bar on phones and tablets */}
+        {count > 0 && <div className="h-36 xl:hidden" aria-hidden />}
       </section>
 
       {/* Checkout (desktop) */}
       <aside className="hidden xl:block">
-        <div className="sticky top-7 rounded-xl border border-line bg-surface">{checkout}</div>
+        <div className="sticky top-7 rounded-2xl border border-line bg-card overflow-hidden">{checkout}</div>
       </aside>
 
-      {/* Checkout bar (mobile/tablet) */}
+      {/* Charge bar (phones and tablets): the money is the biggest thing on screen */}
       {count > 0 && (
-        <div className="xl:hidden fixed inset-x-0 md:left-60 bottom-16 md:bottom-0 z-20 p-3 bg-gradient-to-t from-bg via-bg/95 to-transparent">
-          <Button variant="primary" size="lg" className="w-full" onClick={() => setSheetOpen(true)}>
-            <span className="flex-1 text-left">Cobrar · {count} {count === 1 ? "ítem" : "ítems"}</span>
-            <span className="tabular">{bs(total)}</span>
+        <div className="xl:hidden fixed inset-x-0 md:left-60 bottom-16 md:bottom-0 z-20 px-4 pt-3 pb-4 bg-background border-t border-line">
+          <div className="flex items-end justify-between mb-3">
+            <span className="font-mono text-xs tracking-[0.1em] uppercase text-muted-foreground pb-1">{summary}</span>
+            <span className="text-4xl font-extrabold tracking-[-0.03em] leading-none tabular">{bs(total)}</span>
+          </div>
+          <Button variant="primary" size="lg" className="w-full h-14 text-lg font-bold rounded-2xl" onClick={() => setSheetOpen(true)}>
+            Cobrar
           </Button>
         </div>
       )}
-      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title="Cobrar venta">
+      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title={presaleDay ? "Cobrar preventa" : "Cobrar venta"} fullOnMobile>
         <div className="-m-5">{checkout}</div>
       </Modal>
 
       <DoorLookup open={lookupOpen} onClose={() => setLookupOpen(false)} />
+
+      {/* The stamp */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {stamp ? `${stamp.presale ? "Preventa" : "Venta"} de ${bs(stamp.amount)} guardada` : ""}
+      </div>
+      {stamp && <Stamp key={stamp.id} amount={stamp.amount} at={stamp.at} presale={stamp.presale} />}
+    </div>
+  );
+}
+
+/** A wristband: the plan's ink as a closed band with its snap, the leading mark of every plan row. */
+function Wristband({ ink, live }: { ink: Ink; live: boolean }) {
+  return (
+    <span aria-hidden className={cx("relative h-12 w-4 rounded-full shrink-0", live ? "bg-background" : INK_BG[ink])}>
+      <span className={cx("absolute left-1/2 top-2 -translate-x-1/2 size-1.5 rounded-full", live ? INK_BG[ink] : "bg-background")} />
+    </span>
+  );
+}
+
+function EntryRow({
+  p,
+  qty,
+  price,
+  ink,
+  freeNow,
+  presale,
+  left,
+  dim,
+  onAdd,
+}: {
+  p: Product;
+  qty: number;
+  price: number;
+  ink: Ink;
+  freeNow: boolean;
+  presale: boolean;
+  left: number;
+  dim: boolean;
+  onAdd: (id: string, d: number) => void;
+}) {
+  const live = qty > 0;
+  const soldOut = left <= 0 && !live;
+  const people = p.people_per_unit ?? 1;
+  return (
+    <div
+      className={cx(
+        "rounded-2xl h-[76px] pl-4 pr-3 flex items-center gap-3.5 transition-[background-color,opacity,transform] duration-100",
+        live ? cx(INK_BG[ink], "text-background -translate-y-0.5") : "bg-card",
+        dim && "opacity-55",
+        soldOut && "opacity-40",
+      )}
+    >
+      <Wristband ink={ink} live={live} />
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-[17px] leading-tight truncate">
+          {p.name}
+          {people > 1 && <span className={cx("ml-2 font-mono text-xs font-medium", live ? "text-background/70" : "text-muted-foreground")}>×{people}</span>}
+        </p>
+        <p className={cx("text-sm mt-0.5 truncate", live ? "text-background/75" : "text-ink-2")}>
+          {price === 0 ? <span className={live ? "font-bold" : "text-ok font-semibold"}>Gratis</span> : <span className="font-mono">{bs(price)}</span>}
+          {presale && p.presale_price != null && p.presale_price !== p.price && <span className="ml-1.5 font-mono text-xs line-through opacity-70">{bs(p.price)}</span>}
+          {freeNow && <span> · hasta {p.free_until}, luego {bs(p.price)}</span>}
+          {p.max_per_night != null && (
+            <span className={cx(!live && (left <= 0 ? "text-bad" : left <= 10 ? "text-warn" : ""))}>
+              {" · "}
+              {left <= 0 ? "agotado" : `quedan ${left}`}
+            </span>
+          )}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={() => onAdd(p.id, -1)}
+          disabled={!qty}
+          className={cx(
+            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-colors duration-100",
+            live ? "bg-background/90 text-foreground" : "bg-secondary text-ink hover:bg-secondary/70",
+          )}
+          aria-label={`Quitar una ${p.name}`}
+        >
+          <Minus size={20} />
+        </button>
+        <span className="w-8 text-center font-mono text-[22px] font-bold tabular" aria-live="polite">
+          {qty}
+        </span>
+        <button
+          onClick={() => onAdd(p.id, 1)}
+          disabled={left <= 0}
+          className={cx(
+            "size-12 rounded-xl grid place-items-center disabled:opacity-30 transition-colors duration-100",
+            live ? "bg-background text-foreground" : "bg-foreground text-background hover:bg-foreground/90",
+          )}
+          aria-label={`Agregar una ${p.name}`}
+        >
+          <Plus size={20} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** PAGADO: the club-door hand stamp, pressed onto the screen when a sale is saved. */
+function Stamp({ amount, at, presale }: { amount: number; at: string; presale: boolean }) {
+  const ink: Ink = presale ? "violet" : "pink";
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-[70] grid place-items-center">
+      <div className={cx("size-48 rounded-full border-[6px] grid place-items-center animate-stamp bg-background/85", INK_BORDER[ink], INK_TEXT[ink])}>
+        <div className={cx("size-[164px] rounded-full border-2 flex flex-col items-center justify-center gap-1", INK_BORDER[ink])}>
+          <span className="text-[32px] font-extrabold tracking-[-0.02em] leading-none">{presale ? "PREVENTA" : "PAGADO"}</span>
+          <span className="font-mono text-sm font-bold">
+            {time(at)} · {bs(amount)}
+          </span>
+          <span className="font-mono text-[11px] tracking-[0.2em]">DEMO</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -480,53 +596,48 @@ function Checkout({
   };
 
   if (!lines.length) {
-    return <Empty icon={<Plus size={28} />} title="Venta vacía" hint="Toca productos para agregarlos." />;
+    return <Empty icon={<Ticket size={28} />} title="Venta vacía" hint="Toca entradas o productos para agregarlos." />;
   }
 
   return (
     <div className="flex flex-col">
       {/* Lines */}
-      <div className="px-5 pt-4 pb-3 flex items-center justify-between">
-        <h2 className="font-semibold flex items-center gap-2">
-          <Step n={1} /> Productos
-        </h2>
-        <button onClick={onClear} className="text-xs text-muted-foreground hover:text-bad inline-flex items-center gap-1">
-          <Trash2 size={14} /> Vaciar
+      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+        <h2 className="font-bold">Detalle</h2>
+        <button onClick={onClear} className="h-9 -mr-2 px-2 rounded-lg text-sm text-muted-foreground hover:text-bad inline-flex items-center gap-1.5">
+          <Trash2 size={15} /> Vaciar
         </button>
       </div>
-      <ul className="px-5 space-y-2 max-h-[30vh] overflow-y-auto">
+      <ul className="px-5 divide-y divide-line max-h-[32vh] overflow-y-auto">
         {lines.map(({ product, qty }) => (
-          <li key={product.id} className="flex items-center gap-3">
+          <li key={product.id} className="flex items-center gap-3 py-2.5">
             <div className="flex-1 min-w-0">
-              <p className="text-sm truncate flex items-center gap-1.5">
-                {product.type === "entrada" && <Ticket size={13} className="text-primary shrink-0" />}
-                {product.name}
-              </p>
-              <p className="text-xs text-muted-foreground tabular">{priceOf(product) === 0 ? "Gratis" : bs(priceOf(product))}</p>
+              <p className="text-[15px] font-semibold truncate">{product.name}</p>
+              <p className="font-mono text-xs text-muted-foreground">{priceOf(product) === 0 ? "Gratis" : bs(priceOf(product))}</p>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={() => onAdd(product.id, -1)} className="h-7 w-7 rounded-md border border-line grid place-items-center text-ink-2 hover:text-ink" aria-label="Quitar uno">
-                <Minus size={14} />
+              <button onClick={() => onAdd(product.id, -1)} className="size-9 rounded-lg bg-secondary grid place-items-center hover:bg-secondary/70" aria-label={`Quitar uno de ${product.name}`}>
+                <Minus size={15} />
               </button>
-              <span className="w-7 text-center text-sm tabular">{qty}</span>
-              <button onClick={() => onAdd(product.id, 1)} className="h-7 w-7 rounded-md border border-line grid place-items-center text-ink-2 hover:text-ink" aria-label="Agregar uno">
-                <Plus size={14} />
+              <span className="w-7 text-center font-mono font-bold">{qty}</span>
+              <button onClick={() => onAdd(product.id, 1)} className="size-9 rounded-lg bg-secondary grid place-items-center hover:bg-secondary/70" aria-label={`Agregar uno de ${product.name}`}>
+                <Plus size={15} />
               </button>
             </div>
-            <span className="w-20 text-right text-sm tabular">{bs(priceOf(product) * qty)}</span>
+            <span className="w-20 text-right font-mono text-sm">{bs(priceOf(product) * qty)}</span>
           </li>
         ))}
       </ul>
-      <div className="mx-5 mt-3 pt-3 border-t border-line flex items-baseline justify-between">
-        <span className="text-sm text-ink-2">Total</span>
-        <span className="text-2xl font-semibold tabular">{bs(total)}</span>
+      <div className="mx-5 mt-2 pt-3 border-t border-line flex items-end justify-between">
+        <span className="font-mono text-xs tracking-[0.1em] uppercase text-muted-foreground pb-1">Total</span>
+        <span className="text-4xl font-extrabold tracking-[-0.03em] leading-none tabular">{bs(total)}</span>
       </div>
 
       {presaleDay && (
-        <div className={cx("mx-5 mt-4 rounded-lg border p-3 text-sm flex gap-2", barInPresale ? "border-bad/40 bg-bad/[0.07]" : "border-primary/40 bg-primary/[0.07]")}>
-          <CalendarDays size={16} className={cx("shrink-0 mt-0.5", barInPresale ? "text-bad" : "text-primary")} />
+        <div className={cx("mx-5 mt-4 rounded-xl p-3 text-sm flex gap-2.5", barInPresale ? "bg-bad/15 text-bad" : "bg-ink-violet text-background")}>
+          <CalendarDays size={18} className="shrink-0 mt-px" />
           <span>
-            Preventa para la noche del <span className="first-letter:uppercase inline-block font-medium">{longDay(presaleDay)}</span>.
+            Preventa para la noche del <span className="inline-block first-letter:uppercase font-bold">{longDay(presaleDay)}</span>.
             {barInPresale && " La preventa solo puede incluir entradas: quita los productos de barra."}
           </span>
         </div>
@@ -534,23 +645,23 @@ function Checkout({
 
       {/* Buyer of the entries */}
       {hasEntries && (
-        <div className="mx-5 mt-5 rounded-lg border border-line bg-surface-2/40 p-3.5 space-y-3">
+        <div className="mx-5 mt-5 rounded-2xl bg-secondary p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium flex items-center gap-2">
-              <IdCard size={16} className="text-primary" /> Titular de la entrada
+            <p className="font-bold flex items-center gap-2">
+              <IdCard size={18} className="text-ink-pink" /> Titular
             </p>
-            <span className="text-xs text-muted-foreground tabular">
+            <span className="font-mono text-xs text-ink-2">
               {people} {people === 1 ? "persona" : "personas"}
             </span>
           </div>
-          <div className="grid grid-cols-[1fr_120px] gap-2">
+          <div className="grid grid-cols-[1fr_128px] gap-2">
             <label className="block">
               <Label>Nombre completo *</Label>
-              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ej. Ana Pérez Quispe" autoComplete="off" />
+              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ana Pérez Quispe" autoComplete="off" className="bg-card" />
             </label>
             <label className="block">
               <Label>CI *</Label>
-              <Input value={customerCi} onChange={(e) => setCustomerCi(e.target.value)} placeholder="1234567 LP" autoComplete="off" />
+              <Input value={customerCi} onChange={(e) => setCustomerCi(e.target.value)} placeholder="1234567 LP" autoComplete="off" className="bg-card font-mono" />
             </label>
           </div>
           {people > 1 && (
@@ -561,49 +672,52 @@ function Checkout({
                 onChange={(e) => setGuestsText(e.target.value)}
                 rows={Math.min(Math.max(people - 1, 2), 6)}
                 placeholder={"Un nombre por línea\nOpcional: Nombre, CI"}
-                className="w-full rounded-lg bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-y"
+                className="w-full rounded-lg bg-card border border-line px-3 py-2 text-base text-ink placeholder:text-muted-foreground focus:outline-none focus:border-primary resize-y"
               />
-              <span className="block text-xs text-muted-foreground mt-1 tabular">
+              <span className="block font-mono text-xs text-muted-foreground mt-1">
                 {guests.length} de {people - 1} acompañantes{guests.length > people - 1 ? " · hay más nombres que lugares" : ""}
               </span>
             </label>
           )}
           <label className="block">
             <Label>Código de relacionador (opcional)</Label>
-            <Input value={promoterCode} onChange={(e) => setPromoterCode(e.target.value.toUpperCase())} placeholder="Ej. JUAN10" autoComplete="off" className="uppercase" />
+            <Input value={promoterCode} onChange={(e) => setPromoterCode(e.target.value.toUpperCase())} placeholder="JUAN10" autoComplete="off" className="bg-card font-mono uppercase" />
           </label>
         </div>
       )}
 
       {/* Payment */}
-      <div className="px-5 pt-5 pb-5 space-y-4">
+      <div className="px-5 pt-5 pb-6 space-y-4">
         <div>
-          <Label className="flex items-center gap-2">
-            <Step n={2} /> ¿Cómo pagó?
-          </Label>
-          <div className="grid grid-cols-3 gap-2">
-            {METHODS.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMethod(m.id)}
-                className={cx(
-                  "h-14 rounded-lg border flex flex-col items-center justify-center gap-1 text-xs transition-colors",
-                  method === m.id ? "border-primary bg-primary/10 text-ink" : "border-line text-ink-2 hover:text-ink",
-                )}
-              >
-                <m.icon size={18} className={method === m.id ? "text-primary" : ""} />
-                {m.label}
-              </button>
-            ))}
+          <Label>Cómo pagó</Label>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Método de pago">
+            {METHODS.map((m) => {
+              const on = method === m.id;
+              return (
+                <button
+                  key={m.id}
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setMethod(m.id)}
+                  className={cx(
+                    "h-16 rounded-xl flex flex-col items-center justify-center gap-1 text-sm font-semibold transition-colors duration-100",
+                    on ? "bg-primary text-primary-foreground" : "bg-secondary text-ink-2 hover:text-ink",
+                  )}
+                >
+                  <m.icon size={20} />
+                  {m.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {method === "qr" && (
           <div className="space-y-3">
             <div>
-              <Label>Comprobante del cliente (opcional)</Label>
+              <Label>Comprobante (opcional)</Label>
               {proof ? (
-                <div className="relative rounded-lg border border-line overflow-hidden bg-surface-2">
+                <div className="relative rounded-xl border border-line overflow-hidden bg-secondary">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={proof.preview} alt="Comprobante" className="max-h-48 w-full object-contain" />
                   <button
@@ -612,19 +726,19 @@ function Checkout({
                       setProof(null);
                       runDupCheck(reference, "");
                     }}
-                    className="absolute top-2 right-2 h-7 w-7 rounded-md bg-bg/80 grid place-items-center text-ink-2 hover:text-ink"
+                    className="absolute top-2 right-2 size-9 rounded-lg bg-background/85 grid place-items-center text-ink-2 hover:text-ink"
                     aria-label="Quitar comprobante"
                   >
-                    <X size={14} />
+                    <X size={16} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border border-dashed border-line hover:border-muted-foreground py-5 flex flex-col items-center gap-1.5 text-ink-2"
+                  className="w-full rounded-xl border-2 border-dashed border-line hover:border-muted-foreground py-5 flex flex-col items-center gap-1.5 text-ink-2"
                 >
-                  <ImagePlus size={20} />
-                  <span className="text-sm">Subir captura de WhatsApp</span>
+                  <ImagePlus size={22} />
+                  <span className="text-sm font-semibold">Subir captura de WhatsApp</span>
                   <span className="text-xs text-muted-foreground">o pega con Ctrl+V</span>
                 </button>
               )}
@@ -642,7 +756,7 @@ function Checkout({
             </div>
             <label className="block">
               <Label>N.º de referencia (opcional)</Label>
-              <Input value={reference} onChange={(e) => setReference(e.target.value)} onBlur={() => runDupCheck(reference, proof?.hash ?? "")} placeholder="Ej. 884512" />
+              <Input value={reference} onChange={(e) => setReference(e.target.value)} onBlur={() => runDupCheck(reference, proof?.hash ?? "")} placeholder="884512" className="font-mono" />
             </label>
           </div>
         )}
@@ -650,7 +764,7 @@ function Checkout({
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <Label>Monto recibido</Label>
-            <Input type="number" inputMode="decimal" step="0.01" min="0" value={amount} placeholder={total.toFixed(2)} onChange={(e) => setAmount(e.target.value)} className="tabular" />
+            <Input type="number" inputMode="decimal" step="0.01" min="0" value={amount} placeholder={total.toFixed(2)} onChange={(e) => setAmount(e.target.value)} className="font-mono" />
           </label>
           <label className="block">
             <Label>Mesa / referencia</Label>
@@ -663,10 +777,10 @@ function Checkout({
         </label>
 
         {(mismatch || dups.length > 0) && (
-          <div className="rounded-lg border border-warn/30 bg-warn/[0.07] p-3 space-y-1.5 text-sm">
+          <div className="rounded-xl bg-warn/12 text-warn p-3 space-y-1.5 text-sm" role="alert">
             {mismatch && (
               <p className="flex gap-2">
-                <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                 <span>
                   El monto ({bs(amountNum)}) no coincide con el total ({bs(total)}).
                 </span>
@@ -674,7 +788,7 @@ function Checkout({
             )}
             {dups.map((d) => (
               <p key={d.payment_id} className="flex gap-2">
-                <AlertTriangle size={16} className="text-warn shrink-0 mt-0.5" />
+                <AlertTriangle size={16} className="shrink-0 mt-0.5" />
                 <span>
                   Posible comprobante duplicado: {d.match === "reference" ? "misma referencia" : "misma imagen"} usado el {dateTime(d.created_at)} por {bs(d.amount)}.
                 </span>
@@ -683,29 +797,10 @@ function Checkout({
           </div>
         )}
 
-        <Button variant="primary" size="lg" className="w-full" disabled={saving} onClick={save}>
-          {saving ? (
-            "Guardando…"
-          ) : (
-            <>
-              <Step n={3} invert /> Guardar · cobrado {bs(amountNum)}
-            </>
-          )}
+        <Button variant="primary" size="lg" className="w-full h-14 text-lg font-bold rounded-2xl" disabled={saving} onClick={save}>
+          {saving ? "Guardando…" : `Guardar · ${bs(amountNum)}`}
         </Button>
       </div>
     </div>
-  );
-}
-
-function Step({ n, invert }: { n: number; invert?: boolean }) {
-  return (
-    <span
-      className={cx(
-        "inline-grid place-items-center h-[18px] w-[18px] rounded-full text-[10px] font-semibold shrink-0",
-        invert ? "bg-primary-foreground text-primary" : "bg-primary/15 text-primary",
-      )}
-    >
-      {n}
-    </span>
   );
 }

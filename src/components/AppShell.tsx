@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BarChart3, ClipboardList, History, LogOut, Package, PlusCircle, Receipt, Users } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getApi } from "@/lib/data";
-import { cx } from "./primitives";
+import { Wordmark, cx } from "./primitives";
 
 const NAV = [
   { href: "/", label: "Nueva venta", short: "Vender", icon: PlusCircle, admin: false, mobile: true },
@@ -34,12 +34,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-dvh md:flex">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex md:w-60 shrink-0 flex-col border-r border-line bg-surface/60 sticky top-0 h-dvh">
-        <div className="px-5 py-5 flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center font-bold">B</div>
-          <div className="leading-tight">
-            <p className="font-semibold">Barra</p>
-            <p className="text-xs text-muted-foreground">Registro de ventas</p>
-          </div>
+        <div className="px-5 pt-6 pb-5">
+          <Wordmark className="text-2xl" />
+          <p className="mt-1.5 font-mono text-[11px] tracking-[0.12em] uppercase text-muted-foreground">Ventas de la noche</p>
         </div>
         <nav className="flex-1 px-3 space-y-0.5">
           {items.map((n) => {
@@ -52,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   href={n.href}
                   className={cx(
                     "flex items-center gap-3 rounded-lg px-3 h-10 text-sm transition-colors",
-                    active ? "bg-primary/12 text-ink" : "text-ink-2 hover:text-ink hover:bg-surface-2/60",
+                    active ? "bg-secondary text-ink font-medium" : "text-ink-2 hover:text-ink hover:bg-secondary/60",
                   )}
                 >
                   <n.icon size={18} className={active ? "text-primary" : ""} />
@@ -79,8 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Top bar (mobile) */}
       <header className="md:hidden sticky top-0 z-30 flex items-center justify-between px-4 h-14 border-b border-line bg-bg/95 backdrop-blur">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-7 w-7 rounded-md bg-primary text-primary-foreground grid place-items-center text-sm font-bold">B</div>
-          <span className="font-semibold">Barra</span>
+          <Wordmark className="text-xl" />
           {demo && <span className="text-[11px] text-primary border border-primary/30 rounded px-1.5">demo</span>}
         </div>
         <div className="flex items-center">

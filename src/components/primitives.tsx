@@ -110,12 +110,15 @@ export function Modal({
   title,
   children,
   wide,
+  fullOnMobile,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   wide?: boolean;
+  /** On phones the dialog owns the whole screen (used while money changes hands). */
+  fullOnMobile?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -125,20 +128,21 @@ export function Modal({
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-[#0b0817]/80 p-0 sm:p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
         className={cx(
-          "w-full max-h-[92vh] overflow-y-auto bg-surface border border-line rounded-t-2xl sm:rounded-2xl",
+          "w-full overflow-y-auto overscroll-contain bg-surface border border-line sm:rounded-2xl",
+          fullOnMobile ? "h-dvh max-h-dvh rounded-none sm:h-auto sm:max-h-[92vh]" : "max-h-[92vh] rounded-t-2xl",
           wide ? "sm:max-w-3xl" : "sm:max-w-md",
         )}
       >
-        <div className="sticky top-0 bg-surface flex items-center justify-between px-5 py-4 border-b border-line">
-          <h2 className="font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-ink" aria-label="Cerrar">
-            <X size={18} />
+        <div className="sticky top-0 z-10 bg-surface flex items-center justify-between px-5 h-14 border-b border-line">
+          <h2 className="font-bold text-lg tracking-tight">{title}</h2>
+          <button onClick={onClose} className="h-10 w-10 -mr-2 grid place-items-center rounded-full text-muted-foreground hover:text-ink hover:bg-secondary" aria-label="Cerrar">
+            <X size={20} />
           </button>
         </div>
         <div className="p-5">{children}</div>
@@ -149,4 +153,13 @@ export function Modal({
 
 export function Spinner() {
   return <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-primary" />;
+}
+
+/** DEMO wordmark: the name in the heavy grotesk with a UV-yellow full stop. */
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <span className={cx("font-extrabold tracking-[-0.03em] leading-none select-none", className)}>
+      DEMO<span className="text-primary">.</span>
+    </span>
+  );
 }
