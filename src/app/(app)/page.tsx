@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Banknote, CreditCard, GlassWater, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, X } from "lucide-react";
+import { AlertTriangle, Banknote, CreditCard, GlassWater, IdCard, ImagePlus, Minus, Plus, QrCode, Search, Ticket, Trash2, UserSearch, X } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { bs, dateTime, effectivePrice, isFreeNow } from "@/lib/format";
 import { compressImage, hashFile } from "@/lib/image";
 import type { DuplicateMatch, PaymentMethod, Product, ProductType } from "@/lib/types";
 import { Button, Empty, Input, Label, Modal, Spinner, Toast, cx } from "@/components/ui";
+import { DoorLookup } from "@/components/DoorLookup";
 
 type Cart = Record<string, number>; // product id -> qty
 
@@ -22,6 +23,7 @@ export default function NewSalePage() {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Cart>({});
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [lookupOpen, setLookupOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; kind: "ok" | "bad" } | null>(null);
 
   useEffect(() => {
@@ -125,13 +127,18 @@ export default function NewSalePage() {
     <div className="xl:grid xl:grid-cols-[1fr_380px] xl:gap-6">
       {/* Products */}
       <section className="min-w-0">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Nueva venta</h1>
             <p className="text-sm text-ink-2 mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1">
               <Step n={1} /> Elige entradas o productos <span className="text-muted">·</span> <Step n={2} /> cómo pagó <span className="text-muted">·</span> <Step n={3} /> guarda
             </p>
           </div>
+          {mode === "entrada" && (
+            <Button onClick={() => setLookupOpen(true)}>
+              <UserSearch size={16} /> Verificar reserva
+            </Button>
+          )}
         </div>
 
         {/* Door / bar switch */}
@@ -216,7 +223,10 @@ export default function NewSalePage() {
                     <Ticket size={20} />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{p.name}</p>
+                    <p className="font-medium truncate">
+                      {p.name}
+                      {(p.people_per_unit ?? 1) > 1 && <span className="ml-2 text-xs font-normal text-muted">{p.people_per_unit} personas</span>}
+                    </p>
                     <p className="text-sm tabular flex flex-wrap items-center gap-x-2">
                       {price === 0 ? <span className="text-ok font-medium">Gratis</span> : <span className="text-ink-2">{bs(price)}</span>}
                       {freeNow && <span className="text-xs text-muted">hasta las {p.free_until}, luego {bs(p.price)}</span>}
@@ -295,6 +305,7 @@ export default function NewSalePage() {
         <div className="-m-5">{checkout}</div>
       </Modal>
 
+      <DoorLookup open={lookupOpen} onClose={() => setLookupOpen(false)} />
       {toast && <Toast message={toast.msg} kind={toast.kind} onDone={() => setToast(null)} />}
     </div>
   );
@@ -320,6 +331,21 @@ function Checkout({
   const [reference, setReference] = useState("");
   const [tableLabel, setTableLabel] = useState("");
   const [note, setNote] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [customerCi, setCustomerCi] = useState("");
+  const [guestsText, setGuestsText] = useState("");
+  const entryLines = lines.filter((l) => l.product.type === "entrada");
+  const hasEntries = entryLines.length > 0;
+  const people = entryLines.reduce((a, l) => a + l.qty * (l.product.people_per_unit ?? 1), 0);
+  // one guest per line, optionally "Nombre, CI"
+  const guests = guestsText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [full_name, ci] = l.split(/\s*[,;]\s*/);
+      return { full_name, ci: ci || null };
+    });
   const [proof, setProof] = useState<{ file: Blob; hash: string; preview: string } | null>(null);
   const [dups, setDups] = useState<DuplicateMatch[]>([]);
   const [saving, setSaving] = useState(false);
@@ -371,6 +397,9 @@ function Checkout({
     setReference("");
     setTableLabel("");
     setNote("");
+    setCustomerName("");
+    setCustomerCi("");
+    setGuestsText("");
     if (proof) URL.revokeObjectURL(proof.preview);
     setProof(null);
     setDups([]);
@@ -379,11 +408,14 @@ function Checkout({
   const save = async () => {
     if (!lines.length) return;
     if (!(amountNum >= 0)) return onError("Monto inválido");
+    if (hasEntries && (!customerName.trim() || !customerCi.trim())) return onError("Ingresa nombre completo y CI del titular");
     setSaving(true);
     try {
       const compressed = proof ? await compressImage(proof.file) : null;
       await getApi().createSale({
         table_label: tableLabel,
+        customer: hasEntries ? { name: customerName.trim(), ci: customerCi.trim() } : undefined,
+        guests: hasEntries ? guests : [],
         note,
         items: lines.map((l) => ({ product_id: l.product.id, qty: l.qty })),
         payment: {
@@ -444,6 +476,45 @@ function Checkout({
         <span className="text-sm text-ink-2">Total</span>
         <span className="text-2xl font-semibold tabular">{bs(total)}</span>
       </div>
+
+      {/* Buyer of the entries */}
+      {hasEntries && (
+        <div className="mx-5 mt-5 rounded-lg border border-line bg-surface-2/40 p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <IdCard size={16} className="text-accent" /> Titular de la entrada
+            </p>
+            <span className="text-xs text-muted tabular">
+              {people} {people === 1 ? "persona" : "personas"}
+            </span>
+          </div>
+          <div className="grid grid-cols-[1fr_120px] gap-2">
+            <label className="block">
+              <Label>Nombre completo *</Label>
+              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder="Ej. Ana Pérez Quispe" autoComplete="off" />
+            </label>
+            <label className="block">
+              <Label>CI *</Label>
+              <Input value={customerCi} onChange={(e) => setCustomerCi(e.target.value)} placeholder="1234567 LP" autoComplete="off" />
+            </label>
+          </div>
+          {people > 1 && (
+            <label className="block">
+              <Label>Acompañantes (opcional)</Label>
+              <textarea
+                value={guestsText}
+                onChange={(e) => setGuestsText(e.target.value)}
+                rows={Math.min(Math.max(people - 1, 2), 6)}
+                placeholder={"Un nombre por línea\nOpcional: Nombre, CI"}
+                className="w-full rounded-lg bg-surface-2 border border-line px-3 py-2 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-accent resize-y"
+              />
+              <span className="block text-xs text-muted mt-1 tabular">
+                {guests.length} de {people - 1} acompañantes{guests.length > people - 1 ? " · hay más nombres que lugares" : ""}
+              </span>
+            </label>
+          )}
+        </div>
+      )}
 
       {/* Payment */}
       <div className="px-5 pt-5 pb-5 space-y-4">
@@ -523,7 +594,7 @@ function Checkout({
             <Input type="number" inputMode="decimal" step="0.01" min="0" value={amount} placeholder={total.toFixed(2)} onChange={(e) => setAmount(e.target.value)} className="tabular" />
           </label>
           <label className="block">
-            <Label>Mesa / cliente</Label>
+            <Label>Mesa / referencia</Label>
             <Input value={tableLabel} onChange={(e) => setTableLabel(e.target.value)} placeholder="Opcional" />
           </label>
         </div>

@@ -1,18 +1,20 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { DataApi } from "./api";
-import type { Payment, Profile, Sale, SaleItem } from "../types";
-import { businessDay } from "../format";
+import type { Guest, Payment, Profile, Reservation, Sale, SaleItem } from "../types";
+import { businessDay, matchesPerson } from "../format";
 
 const BUCKET = "payment-proofs";
 
 type SaleRow = Omit<Sale, "items" | "payments" | "created_by_name" | "voided_by_name"> & {
   sale_items: SaleItem[];
   payments: Payment[];
+  sale_guests: Guest[] | null;
 };
 
 const SALE_SELECT =
-  "id, created_at, business_day, created_by, table_label, note, total, status, void_reason, voided_by, voided_at, " +
-  "sale_items(id, product_id, name, product_type, qty, unit_price, subtotal), " +
+  "id, created_at, business_day, created_by, table_label, note, total, status, void_reason, voided_by, voided_at, customer_name, customer_ci, " +
+  "sale_guests(full_name, ci), " +
+  "sale_items(id, product_id, name, product_type, people_per_unit, qty, unit_price, subtotal), " +
   "payments(id, sale_id, method, amount, reference, proof_path, proof_hash, status, reject_reason, verified_by, verified_at, created_at)";
 
 const num = (v: unknown) => Number(v ?? 0);
@@ -34,6 +36,9 @@ function toSale(r: SaleRow, names: Map<string, string>): Sale {
     voided_by: r.voided_by,
     voided_by_name: name(r.voided_by),
     voided_at: r.voided_at,
+    customer_name: r.customer_name,
+    customer_ci: r.customer_ci,
+    guests: r.sale_guests ?? [],
     items: (r.sale_items ?? []).map((i) => ({ ...i, unit_price: num(i.unit_price), subtotal: num(i.subtotal) })),
     payments: (r.payments ?? []).map((p) => ({ ...p, amount: num(p.amount), verified_by_name: name(p.verified_by) })),
   };
@@ -91,6 +96,7 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
         ...rest,
         max_per_night: rest.type === "entrada" && rest.max_per_night ? rest.max_per_night : null,
         free_until: rest.type === "entrada" && rest.free_until ? rest.free_until : null,
+        people_per_unit: rest.type === "entrada" ? Math.max(1, rest.people_per_unit ?? 1) : 1,
       };
       if (id) check(await sb.from("products").update(row).eq("id", id));
       else check(await sb.from("products").insert(row));
@@ -117,6 +123,8 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
           payload: {
             table_label: input.table_label ?? "",
             note: input.note ?? "",
+            customer: input.customer ?? null,
+            guests: input.guests ?? [],
             items: input.items,
             payment: {
               method: input.payment.method,
@@ -131,6 +139,10 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
       return id as string;
     },
 
+    async findReservation(q) {
+      const rows = (check(await sb.rpc("find_reservation", { q })) ?? []) as (Reservation & { total: unknown })[];
+      return rows.map((r) => ({ ...r, total: num(r.total), guests: r.guests ?? [] }));
+    },
     async listSales(f) {
       let q = sb.from("sales").select(SALE_SELECT).gte("business_day", f.from).lte("business_day", f.to);
       if (f.staff) q = q.eq("created_by", f.staff);
@@ -139,6 +151,7 @@ export function createSupabaseApi(url: string, anonKey: string): DataApi {
       let sales = rows.map((r) => toSale(r, names));
       if (f.method) sales = sales.filter((s) => s.payments.some((p) => p.method === f.method));
       if (f.status) sales = sales.filter((s) => s.payments.some((p) => p.status === f.status));
+      if (f.search) sales = sales.filter((s) => matchesPerson(s, f.search!));
       return sales;
     },
     async listPending() {

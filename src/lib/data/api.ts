@@ -3,6 +3,7 @@ import type {
   NewSaleInput,
   Product,
   Profile,
+  Reservation,
   Sale,
   SaleFilters,
 } from "../types";
@@ -26,6 +27,8 @@ export interface DataApi {
   // sales & payments
   checkDuplicate(reference: string, hash: string): Promise<DuplicateMatch[]>;
   createSale(input: NewSaleInput): Promise<string>;
+  /** door verification: tonight's entry sales matching a buyer/guest name or CI (all staff) */
+  findReservation(q: string): Promise<Reservation[]>;
   listSales(filters: SaleFilters): Promise<Sale[]>;
   listPending(): Promise<Sale[]>;
   setPaymentStatus(paymentId: string, status: "verified" | "rejected", reason?: string): Promise<void>;

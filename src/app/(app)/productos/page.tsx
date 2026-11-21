@@ -8,7 +8,7 @@ import type { Product, ProductType } from "@/lib/types";
 import { Button, Card, Empty, Input, Label, Modal, PageHeader, Spinner, Toast, cx } from "@/components/ui";
 
 type Draft = Omit<Product, "id"> & { id?: string };
-const EMPTY: Draft = { name: "", type: "consumo", category: "", price: 0, active: true };
+const EMPTY: Draft = { name: "", type: "consumo", category: "", price: 0, active: true, people_per_unit: 1 };
 
 const SECTIONS: { type: ProductType; title: string; hint: string; icon: typeof Ticket }[] = [
   { type: "entrada", title: "Entradas", hint: "Tipos de entrada que se cobran en puerta (General, VIP…).", icon: Ticket },
@@ -102,9 +102,10 @@ export default function ProductsPage() {
                           <div key={p.id} className={cx("flex items-center gap-4 px-4 py-3", !p.active && "opacity-50")}>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm truncate">{p.name}</p>
-                              {p.type === "entrada" && (p.free_until || p.max_per_night) && (
+                              {p.type === "entrada" && (p.free_until || p.max_per_night || (p.people_per_unit ?? 1) > 1) && (
                                 <p className="mt-1 flex flex-wrap gap-1.5">
                                   {p.free_until && p.price > 0 && <Tag>Libre hasta {p.free_until}</Tag>}
+                                  {(p.people_per_unit ?? 1) > 1 && <Tag>{p.people_per_unit} personas</Tag>}
                                   {p.max_per_night && <Tag>Cupo {p.max_per_night} por noche</Tag>}
                                 </p>
                               )}
@@ -267,6 +268,20 @@ function EntrySetup({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           <Input type="time" disabled={mode !== "until"} value={draft.free_until ?? ""} onChange={(e) => setDraft({ ...draft, free_until: e.target.value || null })} />
         </label>
       </div>
+
+      <label className="block">
+        <Label>Personas por entrada</Label>
+        <Input
+          type="number"
+          inputMode="numeric"
+          min="1"
+          step="1"
+          value={draft.people_per_unit ?? 1}
+          onChange={(e) => setDraft({ ...draft, people_per_unit: Math.max(1, Math.floor(Number(e.target.value) || 1)) })}
+          className="tabular"
+        />
+        <span className="block text-xs text-muted mt-1">1 para entrada individual. Para una mesa, cuántas personas incluye (ej. 6).</span>
+      </label>
 
       <label className="block">
         <Label>Cupo por noche</Label>

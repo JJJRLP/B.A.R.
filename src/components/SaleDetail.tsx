@@ -145,6 +145,26 @@ export function SaleDetail({ sale, onClose, onChanged }: { sale: Sale | null; on
             <span>Por: <span className="text-ink">{sale.created_by_name ?? "—"}</span></span>
             {sale.table_label && <span>Mesa: <span className="text-ink">{sale.table_label}</span></span>}
           </div>
+          {(sale.customer_name || sale.customer_ci) && (
+            <div className="rounded-lg border border-line bg-surface-2/40 p-3 text-sm">
+              <p className="text-xs uppercase tracking-wide text-muted mb-1">Titular</p>
+              <p className="font-medium">{sale.customer_name ?? "—"}</p>
+              <p className="text-ink-2">CI {sale.customer_ci ?? "—"}</p>
+              {sale.guests && sale.guests.length > 0 && (
+                <>
+                  <p className="text-xs uppercase tracking-wide text-muted mt-3 mb-1">Acompañantes ({sale.guests.length})</p>
+                  <ul className="space-y-0.5 text-ink-2">
+                    {sale.guests.map((g, i) => (
+                      <li key={i}>
+                        {g.full_name}
+                        {g.ci && <span className="text-muted"> · CI {g.ci}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          )}
           <ul className="divide-y divide-line border-y border-line">
             {sale.items.map((i) => (
               <li key={i.id} className="flex justify-between py-2 text-sm">

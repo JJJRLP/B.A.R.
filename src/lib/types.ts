@@ -30,6 +30,8 @@ export interface Product {
   max_per_night?: number | null;
   /** entries only: free before this La Paz time "HH:MM" (null = never free) */
   free_until?: string | null;
+  /** entries only: people let in per unit (1 = single entry, 6 = table for 6) */
+  people_per_unit?: number;
 }
 
 export interface SaleItem {
@@ -37,6 +39,7 @@ export interface SaleItem {
   product_id: string;
   name: string;
   product_type: ProductType;
+  people_per_unit?: number;
   qty: number;
   unit_price: number;
   subtotal: number;
@@ -72,13 +75,24 @@ export interface Sale {
   voided_by: string | null;
   voided_by_name?: string;
   voided_at: string | null;
+  /** buyer (titular), required when the sale includes entries */
+  customer_name?: string | null;
+  customer_ci?: string | null;
+  guests?: Guest[];
   items: SaleItem[];
   payments: Payment[];
+}
+
+export interface Guest {
+  full_name: string;
+  ci?: string | null;
 }
 
 export interface NewSaleInput {
   table_label?: string;
   note?: string;
+  customer?: { name: string; ci: string };
+  guests?: Guest[];
   items: { product_id: string; qty: number }[];
   payment: {
     method: PaymentMethod;
@@ -101,6 +115,22 @@ export interface SaleFilters {
   method?: PaymentMethod | "";
   status?: PaymentStatus | "";
   staff?: string; // profile id
+  search?: string; // buyer/guest name or CI
+}
+
+/** One entry sale found at the door by name or CI. */
+export interface Reservation {
+  sale_id: string;
+  created_at: string;
+  customer_name: string | null;
+  customer_ci: string | null;
+  entries: string;
+  people: number;
+  guests: Guest[];
+  total: number;
+  payment_status: PaymentStatus | null;
+  sold_by: string | null;
+  sale_status: SaleStatus;
 }
 
 export const METHOD_LABEL: Record<PaymentMethod, string> = {

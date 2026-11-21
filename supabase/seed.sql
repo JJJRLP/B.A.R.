@@ -1,7 +1,10 @@
 -- Optional: sample products to get started. Edit freely.
+insert into public.products (name, type, category, price, people_per_unit) values
+  ('Entrada General', 'entrada', 'Entradas', 30, 1),
+  ('Entrada VIP', 'entrada', 'Entradas', 80, 1),
+  ('Mesa VIP (6 personas)', 'entrada', 'Mesas', 600, 6);
+
 insert into public.products (name, type, category, price) values
-  ('Entrada General', 'entrada', 'Entradas', 30),
-  ('Entrada VIP', 'entrada', 'Entradas', 80),
   ('Cerveza Paceña 620ml', 'consumo', 'Cervezas', 25),
   ('Cerveza Huari 620ml', 'consumo', 'Cervezas', 28),
   ('Cerveza artesanal', 'consumo', 'Cervezas', 35),

@@ -7,6 +7,8 @@ Built from the MVP PRD: Next.js + Tailwind on the front, Supabase (Postgres, Aut
 
 - **Puerta / Barra**: the sale screen switches between entrance fees (General, VIP… with +/− counters) and bar products. One sale can include both; each device remembers its last mode.
 - **Entry setup** (admin, in Productos): for each entry tier set the price, whether it is always paid, free until a set hour (e.g. free until 23:00, then Bs 30) or always free, and an optional limit per night. The door shows remaining spots and blocks sales once a tier is full. Prices and limits are enforced again in the database.
+- **Buyer and guests**: any sale with entries requires the buyer's (titular) full name and CI. Entry types can include several people (e.g. "Mesa VIP" for 6); then the guests' names (and optionally CI) can be listed, one per line.
+- **Verificar reserva** (door screen): search tonight's entry sales by buyer name, CI or any guest name, from any device, and see what was paid, how many people it covers and whether the payment is verified.
 - **Nueva venta**: tap products, adjust quantities, choose the payment method (QR/transfer, cash, card). For QR, upload or paste (Ctrl+V) the WhatsApp screenshot and type the reference number.
 - **Automatic warnings**: amount ≠ total, and possible duplicate proof (same reference or same image).
 - **Pendientes** (admin): QR payments wait here until someone checks the bank app and marks them *Verificado* or *Rechazado* (with a reason).
@@ -29,7 +31,7 @@ Open http://localhost:3000. With no Supabase keys the app runs in **demo mode**:
 ## Connect Supabase
 
 1. Create a project at [supabase.com](https://supabase.com).
-2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql`, run the files in `supabase/migrations/` that came after it, in order (`002_entry_fees.sql`, then `003_entry_setup.sql`).
+2. In **SQL Editor**, run `supabase/schema.sql` (tables, row level security, RPCs, storage bucket). Optionally run `supabase/seed.sql` for sample products and entry types. If you ran an older `schema.sql`, run the files in `supabase/migrations/` that came after it, in order (`002_entry_fees.sql`, `003_entry_setup.sql`, `004_buyer_and_guests.sql`).
 3. Copy `.env.example` to `.env.local` and fill in **Project Settings → API**:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
@@ -65,6 +67,7 @@ src/components/            app shell, UI primitives, sale detail / proof viewer
 - Every table has row level security. Staff can create sales (only through the `create_sale` RPC, which computes totals from current prices) and read their own sales for the day. Only admins verify, void and manage products and team.
 - Proof images live in a private bucket and are shown through 5-minute signed URLs.
 - Sales and payments are never deleted: voids and verifications record who did them and when.
+- Buyer names and CI numbers are personal data. Staff only see their own sales for the night; the door lookup only searches the current night; full history and CSV exports are admin-only. Keep exported CSVs private.
 
 ## Not in the MVP
 

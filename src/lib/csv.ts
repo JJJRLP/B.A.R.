@@ -19,7 +19,7 @@ export function downloadCsv(name: string, rows: unknown[][]) {
 export function exportSalesCsv(sales: Sale[], label: string) {
   const rows: unknown[][] = [
     [
-      "dia", "fecha_hora", "venta_id", "registrado_por", "mesa", "productos", "total_venta",
+      "dia", "fecha_hora", "venta_id", "registrado_por", "titular", "ci_titular", "acompanantes", "personas", "mesa", "productos", "total_venta",
       "metodo", "monto_pagado", "estado_pago", "referencia", "verificado_por", "verificado_en", "motivo_rechazo",
       "estado_venta", "anulado_por", "anulado_en", "motivo_anulacion", "nota",
     ],
@@ -31,6 +31,10 @@ export function exportSalesCsv(sales: Sale[], label: string) {
         s.created_at,
         s.id,
         s.created_by_name ?? "",
+        s.customer_name ?? "",
+        s.customer_ci ?? "",
+        (s.guests ?? []).map((g) => (g.ci ? `${g.full_name} (CI ${g.ci})` : g.full_name)).join(" | "),
+        s.items.filter((i) => i.product_type === "entrada").reduce((a, i) => a + i.qty * (i.people_per_unit ?? 1), 0),
         s.table_label ?? "",
         s.items.map((i) => `${i.qty}x ${i.name}`).join(" | "),
         s.total.toFixed(2),

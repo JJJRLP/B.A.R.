@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, Image as ImageIcon, Receipt } from "lucide-react";
+import { Download, IdCard, Image as ImageIcon, Receipt, Search } from "lucide-react";
 import { getApi } from "@/lib/data";
 import { useAuth } from "@/lib/auth";
 import { bs, businessDay, dateTime, time, longDay } from "@/lib/format";
@@ -20,6 +20,12 @@ export default function SalesPage() {
   const [method, setMethod] = useState<PaymentMethod | "">("");
   const [status, setStatus] = useState<PaymentStatus | "">("");
   const [staff, setStaff] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setSearchDebounced(search), 250);
+    return () => clearTimeout(t);
+  }, [search]);
   const [sales, setSales] = useState<Sale[] | null>(null);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Sale | null>(null);
@@ -27,12 +33,12 @@ export default function SalesPage() {
   const load = useCallback(async () => {
     setError("");
     try {
-      setSales(await getApi().listSales({ from, to, method, status, staff }));
+      setSales(await getApi().listSales({ from, to, method, status, staff, search: searchDebounced }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
       setSales([]);
     }
-  }, [from, to, method, status, staff]);
+  }, [from, to, method, status, staff, searchDebounced]);
 
   useEffect(() => {
     load();
@@ -58,6 +64,11 @@ export default function SalesPage() {
           )
         }
       />
+
+      <div className="relative mb-3 max-w-md">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar titular, acompañante o CI" className="pl-9" />
+      </div>
 
       {isAdmin && (
         <div className="grid grid-cols-2 md:flex md:flex-wrap gap-3 mb-5">
@@ -138,7 +149,17 @@ export default function SalesPage() {
                       {isAdmin && <td className="px-4 py-3 font-medium whitespace-nowrap">{s.created_by_name ?? "—"}</td>}
                       <td className="px-4 py-3 max-w-0">
                         <p className="truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
-                        {s.table_label && <p className="text-xs text-muted">Mesa {s.table_label}</p>}
+                        {(s.customer_name || s.table_label) && (
+                          <p className="text-xs text-muted flex items-center gap-1 truncate">
+                            {s.customer_name && (
+                              <>
+                                <IdCard size={12} /> {s.customer_name}
+                                {s.customer_ci ? ` · CI ${s.customer_ci}` : ""}
+                              </>
+                            )}
+                            {s.table_label && `${s.customer_name ? " · " : ""}Mesa ${s.table_label}`}
+                          </p>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-ink-2">
                         <span className="inline-flex items-center gap-1.5">
@@ -178,6 +199,7 @@ export default function SalesPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm truncate">{s.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                         <p className="text-xs text-muted truncate">
+                          {s.customer_name ? `${s.customer_name} · ` : ""}
                           {isAdmin && s.created_by_name ? `${s.created_by_name} · ` : ""}
                           {p ? METHOD_LABEL[p.method] : "—"}
                         </p>

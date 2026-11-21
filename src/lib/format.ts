@@ -49,3 +49,14 @@ export function isFreeNow(freeUntil: string | null | undefined, now = new Date()
 export function effectivePrice(p: { type: string; price: number; free_until?: string | null }, now = new Date()): number {
   return p.type === "entrada" && isFreeNow(p.free_until, now) ? 0 : p.price;
 }
+
+/** True if a sale's buyer, CI or any guest matches the search text. */
+export function matchesPerson(
+  s: { customer_name?: string | null; customer_ci?: string | null; guests?: { full_name: string; ci?: string | null }[] },
+  q: string,
+): boolean {
+  const t = q.trim().toLowerCase();
+  if (!t) return true;
+  const has = (v?: string | null) => !!v && v.toLowerCase().includes(t);
+  return has(s.customer_name) || has(s.customer_ci) || (s.guests ?? []).some((g) => has(g.full_name) || has(g.ci));
+}

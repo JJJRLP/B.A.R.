@@ -1,7 +1,7 @@
 import type { DataApi } from "./api";
-import type { Payment, Product, Profile, Sale } from "../types";
+import type { Payment, Product, Profile, Reservation, Sale } from "../types";
 import { blobToDataUrl, compressImage } from "../image";
-import { businessDay, effectivePrice } from "../format";
+import { businessDay, effectivePrice, matchesPerson } from "../format";
 
 /**
  * Demo backend: keeps everything in this browser's localStorage so the app can be
@@ -20,10 +20,13 @@ interface Store {
 
 const uuid = () => crypto.randomUUID();
 
-const SEED_ENTRIES: [string, string, number][] = [
-  ["Entrada General", "Entradas", 30],
-  ["Entrada VIP", "Entradas", 80],
+const SEED_ENTRIES: [string, string, number, number][] = [
+  ["Entrada General", "Entradas", 30, 1],
+  ["Entrada VIP", "Entradas", 80, 1],
+  ["Mesa VIP (6 personas)", "Mesas", 600, 6],
 ];
+const seedEntry = ([name, category, price, people]: [string, string, number, number]) =>
+  ({ id: uuid(), name, type: "entrada" as const, category, price, people_per_unit: people, active: true });
 
 const SEED_PRODUCTS: [string, string, number][] = [
   ["Cerveza Paceña 620ml", "Cervezas", 25],
@@ -47,7 +50,7 @@ function seed(): Store {
       { id: "demo-staff", full_name: "Barra (demo)", email: "barra@demo", role: "staff", active: true },
     ],
     products: [
-      ...SEED_ENTRIES.map(([name, category, price]) => ({ id: uuid(), name, type: "entrada" as const, category, price, active: true })),
+      ...SEED_ENTRIES.map(seedEntry),
       ...SEED_PRODUCTS.map(([name, category, price]) => ({ id: uuid(), name, type: "consumo" as const, category, price, active: true })),
     ],
     sales: [],
@@ -70,7 +73,11 @@ function migrate(s: Store): Store {
         changed = true;
       }
   if (!s.products.some((p) => p.type === "entrada")) {
-    s.products.unshift(...SEED_ENTRIES.map(([name, category, price]) => ({ id: uuid(), name, type: "entrada" as const, category, price, active: true })));
+    s.products.unshift(...SEED_ENTRIES.map(seedEntry));
+    changed = true;
+  }
+  if (!s.products.some((p) => p.type === "entrada" && (p.people_per_unit ?? 1) > 1)) {
+    s.products.push(seedEntry(SEED_ENTRIES[2]));
     changed = true;
   }
   if (changed) save(s);
@@ -180,6 +187,7 @@ export function createDemoApi(): DataApi {
         ...p,
         max_per_night: p.type === "entrada" && p.max_per_night ? p.max_per_night : null,
         free_until: p.type === "entrada" && p.free_until ? p.free_until : null,
+        people_per_unit: p.type === "entrada" ? Math.max(1, p.people_per_unit ?? 1) : 1,
       };
       if (p.id) s.products = s.products.map((x) => (x.id === p.id ? { ...x, ...clean, id: x.id } : x));
       else s.products.push({ ...clean, id: uuid() });
@@ -213,8 +221,12 @@ export function createDemoApi(): DataApi {
         if (prod.type === "entrada" && prod.max_per_night && (sold[prod.id] ?? 0) + i.qty > prod.max_per_night)
           throw new Error(`Cupo agotado para ${prod.name}: quedan ${Math.max(prod.max_per_night - (sold[prod.id] ?? 0), 0)}`);
         const price = effectivePrice(prod);
-        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, qty: i.qty, unit_price: price, subtotal: price * i.qty };
+        return { id: uuid(), product_id: prod.id, name: prod.name, product_type: prod.type, people_per_unit: prod.people_per_unit ?? 1, qty: i.qty, unit_price: price, subtotal: price * i.qty };
       });
+      const customerName = input.customer?.name.trim() ?? "";
+      const customerCi = input.customer?.ci.trim() ?? "";
+      if (items.some((i) => i.product_type === "entrada") && (!customerName || !customerCi))
+        throw new Error("Las entradas requieren nombre completo y CI del titular");
       let proof_path: string | null = null;
       if (input.payment.proof) {
         // smaller than production so localStorage doesn't fill up
@@ -249,6 +261,9 @@ export function createDemoApi(): DataApi {
         void_reason: null,
         voided_by: null,
         voided_at: null,
+        customer_name: customerName || null,
+        customer_ci: customerCi || null,
+        guests: (input.guests ?? []).filter((g) => g.full_name.trim()).map((g) => ({ full_name: g.full_name.trim(), ci: g.ci?.trim() || null })),
         items,
         payments: [payment],
       });
@@ -256,11 +271,36 @@ export function createDemoApi(): DataApi {
       return saleId;
     },
 
+    async findReservation(q) {
+      if (q.trim().length < 2) return [];
+      const s = load();
+      const today = businessDay();
+      const out: Reservation[] = [];
+      for (const x of s.sales) {
+        const entries = x.items.filter((i) => i.product_type === "entrada");
+        if (x.business_day !== today || !entries.length || !matchesPerson(x, q)) continue;
+        out.push({
+          sale_id: x.id,
+          created_at: x.created_at,
+          customer_name: x.customer_name ?? null,
+          customer_ci: x.customer_ci ?? null,
+          entries: entries.map((i) => `${i.qty}× ${i.name}`).join(", "),
+          people: entries.reduce((a, i) => a + i.qty * (i.people_per_unit ?? 1), 0),
+          guests: x.guests ?? [],
+          total: x.total,
+          payment_status: x.payments[0]?.status ?? null,
+          sold_by: s.profiles.find((p) => p.id === x.created_by)?.full_name ?? null,
+          sale_status: x.status,
+        });
+      }
+      return out.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 20);
+    },
     async listSales(f) {
       const s = load();
       return visible(s)
         .filter((x) => x.business_day >= f.from && x.business_day <= f.to)
         .filter((x) => !f.staff || x.created_by === f.staff)
+        .filter((x) => !f.search || matchesPerson(x, f.search))
         .filter((x) => !f.method || x.payments.some((p) => p.method === f.method))
         .filter((x) => !f.status || x.payments.some((p) => p.status === f.status))
         .sort((a, b) => b.created_at.localeCompare(a.created_at))

@@ -37,11 +37,12 @@ export default function ClosePage() {
         return [m, { verified: ps.filter((p) => p.status === "verified").reduce((a, p) => a + p.amount, 0), pending: ps.filter((p) => p.status === "pending").reduce((a, p) => a + p.amount, 0), count: ps.length }];
       }),
     ) as Record<PaymentMethod, { verified: number; pending: number; count: number }>;
-    const products = new Map<string, { name: string; type: ProductType; qty: number; amount: number }>();
+    const products = new Map<string, { name: string; type: ProductType; qty: number; people: number; amount: number }>();
     for (const sale of active)
       for (const i of sale.items) {
-        const row = products.get(i.product_id) ?? { name: i.name, type: i.product_type ?? "consumo", qty: 0, amount: 0 };
+        const row = products.get(i.product_id) ?? { name: i.name, type: i.product_type ?? "consumo", qty: 0, people: 0, amount: 0 };
         row.qty += i.qty;
+        row.people += i.qty * (i.people_per_unit ?? 1);
         row.amount += i.subtotal;
         products.set(i.product_id, row);
       }
@@ -79,7 +80,7 @@ export default function ClosePage() {
       products: productRows,
       entryRows,
       barRows,
-      people: entryRows.reduce((a, r) => a + r.qty, 0),
+      people: entryRows.reduce((a, r) => a + r.people, 0),
       entryAmount: entryRows.reduce((a, r) => a + r.amount, 0),
       barAmount: barRows.reduce((a, r) => a + r.amount, 0),
     };

@@ -38,7 +38,7 @@ export function buildActivity(sales: Sale[], from: string, to: string, actorId?:
       actorName: s.created_by_name ?? "—",
       amount: s.total,
       method: pay?.method,
-      detail: [items(s), pay ? METHOD_LABEL[pay.method] : "", s.table_label ? `Mesa ${s.table_label}` : ""].filter(Boolean).join(" · "),
+      detail: [items(s), s.customer_name ? `Titular ${s.customer_name}${s.customer_ci ? ` (CI ${s.customer_ci})` : ""}` : "", pay ? METHOD_LABEL[pay.method] : "", s.table_label ? `Mesa ${s.table_label}` : ""].filter(Boolean).join(" · "),
       sale: s,
     });
     for (const p of s.payments) {
